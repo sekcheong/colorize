@@ -1,0 +1,61 @@
+% arara: pdflatex
+% arara: bibtex
+% arara: pdflatex
+% arara: pdflatex
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[section]{placeins}
+
+\bibliographystyle{acm}
+
+\hypersetup{
+  colorlinks, linkcolor=red
+}
+
+\begin{document}
+
+
+\title{CS838 Project Proposal}
+\author{Sek Cheong}
+\maketitle
+
+\begin{abstract}
+This project is an attempt to build a deep convolutional neural network (CNN) to colorize black and white images. The net will take a black and white image and output a colorized image. In this project, we use a pre-trained model, VGG16~\cite{vgg16}, to extract features that will be used for training our network for colorizing. We hope to gain some insight on how deep learn features from natural image and the technique of transfer learning.
+\end{abstract}
+
+\section{Introduction}
+Colorize old black and white photos used to be done manually by trained specialists. It is a tedious and time consuming process. With the invention of photo touching softwares, colorization can be done much easier, but it still requires human intervention. In this project we explorer the use of deep CNN to colorize black and white images automatically. 
+
+
+As a result of the ImageNet competitions, there are a number of sophisticated CNN models and their trained weights made available for public use. Rather than training our own model from scratch, which can be very time consuming and difficult, it is better to start with a pre-trained model from ImageNet and use the transfer learning technique to extract features learned in the pre-trained model to train out new model to colorize gray level images.
+
+
+\section{Data Set}
+We use the images from ImageNet and number of open source image sets from the Internet. The training examples can be constructed by converting those color images into gray level images. The gray level images will be used as the feature vector and the color images will be used as the target value. Specifically, we transform the color space of a image from RGB to YUV space, where Y channel represents the intensity of the image and U, V channels represent the color information. We feed the content of Y channel to the model and use UV channels as the target value. 
+
+
+\section{Approach}
+We use VGG16 model as a starting point and forward an image into the VGG16 model, we then extract a few layers from the VGG model and downscale the image to match the extracted layers. The extracted layers should contain useful information of the image. We will construct a model based on the extracted layers to colorize images.  
+
+
+Our model is basically a learned function that takes the gray level pixels as input and maps them into RGB color pixels. It is not possible to achieve the perfect mapping from gray level images to color images, as the conversion from color images to gray level images is not a one-to-one correspondent function. 
+
+
+We choose the Keras framework with Tensorflow backend for the experiment. We choose Keras due to its user friendlyness and the ability to use GPU as the computing core. The experiment will be carried out on a computer equipped with a 3.7GHz Intel quad core processor, 16G of memory and nVidia GeForce GTX 660 graphics card with 2G memory.  
+
+
+There is a pre-trained VGG16 model for Keras created by François Chollet~\cite{pretrainedmodel} from github, we plan to use this model and extend it to coloring images. 
+
+
+We split out constructed data set into the training, tune, and test set. We use a MSE of the each pixel of the colorized image and the true color image as a measure of accuracy. 
+
+
+
+
+
+
+\bibliography{proposal}
+
+\end{document}
