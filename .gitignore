@@ -17,7 +17,7 @@ hs_err_pid*
 .DS_Store
 /bin/
 
-
+/images/
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
