@@ -1,7 +1,7 @@
-#!/bin/python
 import os
 import cv2
 import numpy as np
+import scipy as sp
 
 
 def imageLoad(path):
@@ -14,16 +14,37 @@ def imageIsGrayScale(img):
 	return True
 
 
-def imageCompressColor(img):
-	#convert image to YUV
+def imageRGB2YUV(img):
 	out = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
 	Y = out[:,:,0]
 	U = out[:,:,1]
 	V = out[:,:,2]
-	return (Y, U, V) 
+	return (Y, U, V)
 
 
-def imageResizeCrop(img, size=244):
+def imageYUV2RGB(Y, U, V):
+	if (U.shape != Y.shape):
+		U = cv2.resize(U, (Y.shape[1], Y.shape[0]), interpolation = cv2.INTER_CUBIC)
+	if (V.shape != Y.shape):
+		V = cv2.resize(V, (Y.shape[1], Y.shape[0]), interpolation = cv2.INTER_CUBIC)
+	yuv = (np.dstack([Y,U,V])).astype(np.uint8)
+	img = cv2.cvtColor(yuv, cv2.COLOR_YUV2BGR)
+	return img
+
+
+def imageCompressColor(Y, U, V, ratio=0.5):
+	U = cv2.resize(U, (int(U.shape[1]*ratio), int(U.shape[0]*ratio) ) , interpolation = cv2.INTER_CUBIC)
+	V = cv2.resize(V, (int(V.shape[1]*ratio), int(V.shape[0]*ratio) ) , interpolation = cv2.INTER_CUBIC)
+	return (Y, U, V)
+
+
+def imageDecompressColor(Y, U, V):
+	U = cv2.resize(U, (Y.shape[1], Y.shape[0]), interpolation = cv2.INTER_CUBIC)
+	V = cv2.resize(V, (Y.shape[1], Y.shape[0]), interpolation = cv2.INTER_CUBIC)
+	return (Y, U, V)
+
+
+def imageResizeCrop(img, size=224):
 	width = img.shape[1]
 	height = img.shape[0]
 	ratio =  height / width
@@ -66,8 +87,7 @@ def processImages(path, outPath):
 		if fname.lower().endswith(".jpg") or fname.lower().endswith(".png"): 
 			imgPath = os.path.join(path, fname)
 			img = imageLoad(imgPath)
-			if not imageIsGrayScale(img):
-				print(imgPath)						
+			if not imageIsGrayScale(img):					
 				img = imageResizeCrop(img)
 				name = fname.split(".")[0]
 				imgPath = os.path.join(outPath, name) + ".jpg"
@@ -80,19 +100,22 @@ def processImages(path, outPath):
 
 if __name__ == "__main__":
 
-
 	processImages('../images/mirflickr', '../images/processed')
-	img = imageLoad('../images/mirflickr/im3.jpg')  #cv2.imread('../images/mirflickr/im4183.jpg')
-	img = imageResizeCrop(img)
+	
+	img = imageLoad('../images/processed/im5.jpg')  #cv2.imread('../images/mirflickr/im4183.jpg')
+	#img = imageResizeCrop(img)
 
 	print ('Shape:', img.shape[0],  img.dtype, '\nGray Level:', imageIsGrayScale(img))
 
-	(Y, U, V) = imageCompressColor(img)
+	(Y, U, V) = imageRGB2YUV(img)
+	(Y, U, V) = imageCompressColor(Y, U, V, 0.15)
 
-	(Y, U, V) = (imageFromComponent(Y), imageFromComponent(U), imageFromComponent(V))
+	#(Y, U, V) = (imageFromComponent(Y), imageFromComponent(U), imageFromComponent(V))
+	print(U.shape, ",", V.shape)
+	img2 = imageYUV2RGB(Y, U, V)
+	cv2.imshow('image', imageConcat([img, img2]) )
 
-
-	cv2.imshow('image', imageConcat([img, Y, U, V]))
+	#cv2.imshow('image', imageConcat([img, Y, U, V]))
 	k = cv2.waitKey(0) & 0xFF
 
 	if k == 27:         # wait for ESC key to exit
