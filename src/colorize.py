@@ -20,12 +20,13 @@ from keras.applications.imagenet_utils import _obtain_input_shape
 
 
 config = {
-    
+
     'imageWidth'  : 224,
     'imageHeight' : 224,
     'downSample'  : 0.15,
     'epochsToRun' : 10,
     'batchSize'   : 5
+
 }
 
 
@@ -52,7 +53,7 @@ def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['
     inputShape = _obtain_input_shape((imageWidth, imageHeight, 3), default_size=imageWidth,
                                                                    min_size=48,
                                                                    data_format=K.image_data_format(),
-                                                                   include_top=False)
+                                                                   include_top=False)    
     
     imgInput = Input(shape=inputShape)
 
@@ -186,15 +187,14 @@ def loadImages(path):
     return images
 
 
-def loadOneDataSet(path, ratio=1.0):
-
+def loadOneImageSet(path, ratio=1.0):
     fileList = [f for f in os.listdir(path) if isImageFile(f)]
     fileList = fileList[:int(len(fileList)*ratio)]
     
     images = []
     for fname in fileList:
-        if isImageFile(fname):
-            imgPath = os.path.join(path, fname)
+        if isImageFile(fname):            
+            imgPath = os.path.join(path, fname)            
             img = imageLoad(imgPath)
             images.append(img)
     return images
@@ -206,19 +206,18 @@ def loadDataSet(basePath, ratio=1.0):
     testPath  = os.path.join(basePath, 'test')
 
     (trainX, trainY, tuneX, tuneY, testX, testY) = ([], [], [], [], [], [])
-
-    #files  = [f for f in os.listdir(directory) if f.endswith("jpg")]
-    for img in loadImages(trainPath):
+   
+    for img in loadOneImageSet(trainPath, 0.1):
         (x, y) = makeTrainExample(img)
         trainX.append(x)
         trainY.append(y)
 
-    for img in loadImages(tunePath):
+    for img in loadOneImageSet(tunePath, 0.1):
         (x, y) = makeTrainExample(img)
         tuneX.append(x)
         tuneY.append(y)
 
-    for img in loadImages(testPath):
+    for img in loadOneImageSet(testPath, 0.1):
         (x, y) = makeTrainExample(img)
         testX.append(x)
         testY.append(y)
@@ -245,26 +244,23 @@ def imageShow(img):
 
 if __name__ == '__main__':
 
-    l = loadOneDataSet('../images/train', 0.1)
-    print (len(l))
-    
-    '''
-
     print("Creating model...", end='', flush=True)
     start = time.time()
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)    
     opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=1e-6, nesterov=False)
     end = time.time()
-    print("done. ", end-start)
+    print("done. ", "elapsedTime=", end-start)
 
     model = makeColorizeModel()
     model.compile(optimizer = opt,
                   loss='mean_squared_error',
                   metrics = ['accuracy'])
 
+    start = time.time()
     print("Loading data set...", end='', flush=True)
     (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images')
-    print("done.")
+    end = time.time()
+    print("done. ", "elapsedTime=", end-start)
 
     print ("Train examples:", len(trainX))
     print ("Tune examples :", len(tuneX))
@@ -279,8 +275,6 @@ if __name__ == '__main__':
               shuffle    = True)
 
     print("done")
-
-    '''
 
 
     #keras.utils.plot_model(model, to_file='model.png')
