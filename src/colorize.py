@@ -2,8 +2,41 @@ import os
 import cv2
 import numpy as np
 import scipy as sp
-import random
-from shutil import copyfile
+import time
+import warnings
+
+
+from keras.utils import plot_model
+
+from keras.models import Model
+from keras.layers import Flatten
+from keras.layers import Dense
+from keras.layers import Input
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import GlobalMaxPooling2D
+from keras.layers import GlobalAveragePooling2D
+from keras.preprocessing import image
+from keras.utils import layer_utils
+from keras.utils.data_utils import get_file
+from keras import backend as K
+from keras.applications.imagenet_utils import decode_predictions
+from keras.applications.imagenet_utils import preprocess_input
+from keras.applications.imagenet_utils import _obtain_input_shape
+from keras.engine.topology import get_source_inputs
+
+
+from os.path                    import join, basename
+from scipy.misc                 import imresize, imread
+from datetime                   import datetime
+from keras.models               import Sequential
+from keras.layers               import Dense, Activation, Flatten, Dropout
+from keras.layers.pooling       import MaxPooling2D
+from keras.layers.convolutional import Conv2D, ZeroPadding2D
+from keras.optimizers           import Adam
+from keras.layers.advanced_activations import LeakyReLU
+
+
 
 def imageLoad(path):
 	return cv2.imread(path)
@@ -85,7 +118,7 @@ def imageConcat(images):
 
 def processImages(path, outPath):
 	for fname in os.listdir(path):
-		if fname.lower().endswith(".jpg") or fname.lower().endswith(".png") or fname.lower().endswith(".jpeg"): 
+		if fname.lower().endswith(".jpg") or fname.lower().endswith(".png"): 
 			imgPath = os.path.join(path, fname)
 			img = imageLoad(imgPath)
 			if not imageIsGrayScale(img):					
@@ -96,48 +129,9 @@ def processImages(path, outPath):
 				cv2.imwrite(imgPath, img)
 
 
-def prepareDataSet(path, trainPath, tunePath, testPath, ratio = (0.7, 0.2, 0.1), size=10000):
-	files = []
-	for fname in os.listdir(path):
-		if fname.lower().endswith(".jpg") or fname.lower().endswith(".png") or fname.lower().endswith(".jpeg"):
-			files.append(fname)
+def VGG16():
 	
-	random.seed(838*838)
-	random.shuffle(files)
 
-	trainsize = int(size * ratio[0])
-	tunesize = int(size * ratio[1])
-	testsize = int(size - trainsize - tunesize)
-
-	print(trainsize,",",tunesize,",",testsize)
-
-	train = []
-	tune = []
-	test = []
-
-	for i in range(trainsize):
-		train.append(files.pop())
-
-	for i in range(tunesize):
-		tune.append(files.pop())
-
-	for i in range(testsize):
-		test.append(files.pop())
-
-	for fname in train:
-		src = os.path.join(path, fname)
-		dest = os.path.join(trainPath, fname)
-		copyfile(src, dest)
-
-	for fname in tune:
-		src = os.path.join(path, fname)
-		dest = os.path.join(tunePath, fname)
-		copyfile(src, dest)
-
-	for fname in test:
-		src = os.path.join(path, fname)
-		dest = os.path.join(testPath, fname)
-		copyfile(src, dest)
 
 
 
@@ -145,10 +139,7 @@ def prepareDataSet(path, trainPath, tunePath, testPath, ratio = (0.7, 0.2, 0.1),
 
 if __name__ == "__main__":
 
-
-	prepareDataSet('../images/processed','../images/train','../images/tune','../images/test')
-
-	#processImages('../images/mirflickr', '../images/processed')
+	processImages('../images/mirflickr', '../images/processed')
 	
 	img = imageLoad('../images/processed/im5.jpg')  #cv2.imread('../images/mirflickr/im4183.jpg')
 	#img = imageResizeCrop(img)
