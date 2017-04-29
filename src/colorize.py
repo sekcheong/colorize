@@ -17,6 +17,7 @@ from keras.layers import GlobalAveragePooling2D
 from keras import losses
 from keras import backend as K
 from keras.applications.imagenet_utils import _obtain_input_shape
+from keras.applications.imagenet_utils import preprocess_input
 
 
 config = {
@@ -24,7 +25,7 @@ config = {
     'imageWidth'  : 224,
     'imageHeight' : 224,
     'downSample'  : 0.15,
-    'epochsToRun' : 10,
+    'epochsToRun' : 20,
     'batchSize'   : 5
 
 }
@@ -205,26 +206,38 @@ def loadDataSet(basePath, ratio=1.0):
     tunePath  = os.path.join(basePath, 'tune')
     testPath  = os.path.join(basePath, 'test')
 
+    #trainX = np.empty(shape=(1, 224, 224, 3), dtype=K.floatx())
+    #trainY = np.empty(shape=(2178,), dtype=K.floatx())
     (trainX, trainY, tuneX, tuneY, testX, testY) = ([], [], [], [], [], [])
    
     for img in loadOneImageSet(trainPath, 0.1):
         (x, y) = makeTrainExample(img)
+        x = np.expand_dims(x, axis=0)
+        x = x.astype(K.floatx(), copy=False)
+        x = preprocess_input(x)
         trainX.append(x)
         trainY.append(y)
 
     for img in loadOneImageSet(tunePath, 0.1):
         (x, y) = makeTrainExample(img)
+        x = np.expand_dims(x, axis=0)
+        x = x.astype(K.floatx(), copy=False)
+        x = preprocess_input(x)
         tuneX.append(x)
         tuneY.append(y)
 
     for img in loadOneImageSet(testPath, 0.1):
         (x, y) = makeTrainExample(img)
+        x = np.expand_dims(x, axis=0)
+        x = x.astype(K.floatx(), copy=False)
+        x = preprocess_input(x)
         testX.append(x)
         testY.append(y)
     
+    trainX = np.vstack(tuple(trainX))
+    trainY = np.vstack(tuple(trainY))
+
     return (trainX, trainY), (tuneX, tuneY), (testX, testY) 
-
-
 
 
 def imageShow(img):
@@ -276,6 +289,15 @@ if __name__ == '__main__':
 
     print("done")
 
+
+    # serialize model to JSON    
+    model_json = model.to_json()
+    with open("model.json", "w") as json_file:
+        json_file.write(model_json)
+    
+    # serialize weights to HDF5
+    model.save_weights("model.h5")
+    print("Saved model to disk")
 
     #keras.utils.plot_model(model, to_file='model.png')
 
