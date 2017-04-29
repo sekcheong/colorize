@@ -28,7 +28,7 @@ config = {
     'imageHeight' : 224,
     'downSample'  : 0.15,
     'epochsToRun' : 10,
-    'batchSize'   : 25
+    'batchSize'   : 20
 
 }
 
