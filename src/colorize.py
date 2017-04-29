@@ -270,7 +270,7 @@ if __name__ == '__main__':
 
     print("Creating model...", end='', flush=True)
     start = time.time()
-    #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)    
+    #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-6)    
     #opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=0.0008, nesterov=False)
     
     opt = keras.optimizers.SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)    
@@ -303,6 +303,7 @@ if __name__ == '__main__':
                 shuffle    = True,
                 verbose    = 1,
                 callbacks  = [
+
                     callbacks.ModelCheckpoint(
                         '../models/colorize_weights_checkpoint.h5',
                         monitor           = 'val_loss',
@@ -311,7 +312,16 @@ if __name__ == '__main__':
                         save_weights_only = True,
                         mode              = 'auto',
                         period            = 5
+                    ),
+
+                    callbacks.EarlyStopping(
+                        monitor           = 'val_loss', 
+                        min_delta         = 0, 
+                        patience          = 0, 
+                        verbose           = 0, 
+                        mode              = 'auto'
                     )
+
                 ]
               )
 
@@ -322,6 +332,6 @@ if __name__ == '__main__':
         jsonFile.write(modelJson)
 
     # save weights to HDF5
-    model.save_weights("../models/weights.h5")
+    #model.save_weights("../models/weights.h5")
   
     # plot_model(model, to_file='model.png')
