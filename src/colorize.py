@@ -91,8 +91,8 @@ def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['
 
     # Final FC layers
     x = Flatten(name='flatten')(x)
-    x = Dense(4096, activation='relu', name='fc1')(x)
-    x = Dense(4096, activation='relu', name='fc2')(x)
+    x = Dense(1024, activation='relu', name='fc1')(x)
+    x = Dense(1024, activation='relu', name='fc2')(x)
     out = Dense(colorChannelSize, activation='tanh', name='colorize')(x)
     
     model = Model(imgInput, out)
@@ -308,13 +308,13 @@ if __name__ == '__main__':
                 verbose    = 1,
                 callbacks  = [
                     callbacks.ModelCheckpoint(
-                        '../models/colorize_weights.hdf5',
-                        monitor='val_loss',
-                        verbose=0,
-                        save_best_only=False,
-                        save_weights_only=True,
-                        mode='auto',
-                        period=1
+                        '../models/colorize_weights_checkpoint.h5',
+                        monitor           = 'val_loss',
+                        verbose           = 0,
+                        save_best_only    = False,
+                        save_weights_only = True,
+                        mode              = 'auto',
+                        period            = 5
                     )
                 ]
               )
@@ -326,6 +326,9 @@ if __name__ == '__main__':
     modelJson = model.to_json()
     with open("../models/colorize_model.json", "w") as jsonFile:
         jsonFile.write(modelJson)
+
+    # save weights to HDF5
+    model.save_weights("../models/weights.h5")
 
 #END
 
