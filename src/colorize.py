@@ -91,8 +91,8 @@ def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['
 
     # Final FC layers
     x = Flatten(name='flatten')(x)
-    x = Dense(1024, activation='relu', name='fc1')(x)
-    x = Dense(1024, activation='relu', name='fc2')(x)
+    x = Dense(4096, activation='relu', name='fc1')(x)
+    x = Dense(4096, activation='relu', name='fc2')(x)
     out = Dense(colorChannelSize, activation='tanh', name='colorize')(x)
     
     model = Model(imgInput, out)
@@ -314,7 +314,7 @@ if __name__ == '__main__':
                     )
                 ]
               )
-    
+
 
     # save model to JSON
     modelJson = model.to_json()
