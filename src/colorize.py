@@ -27,8 +27,8 @@ config = {
     'imageWidth'  : 224,
     'imageHeight' : 224,
     'downSample'  : 0.15,
-    'epochsToRun' : 15,
-    'batchSize'   : 20
+    'epochsToRun' : 10,
+    'batchSize'   : 25
 
 }
 
@@ -328,16 +328,16 @@ if __name__ == '__main__':
                         save_best_only    = False,
                         save_weights_only = True,
                         mode              = 'auto',
-                        period            = 5
-                    ),
-
-                    callbacks.EarlyStopping(
-                        monitor           = 'val_loss', 
-                        min_delta         = 0, 
-                        patience          = 0, 
-                        verbose           = 0, 
-                        mode              = 'auto'
+                        period            = 1
                     )
+
+                    # callbacks.EarlyStopping(
+                    #     monitor           = 'val_loss', 
+                    #     min_delta         = 0, 
+                    #     patience          = 0, 
+                    #     verbose           = 0, 
+                    #     mode              = 'auto'
+                    # )
 
                 ]
               )
