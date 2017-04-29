@@ -215,7 +215,7 @@ def makeExamples(images):
 
     #convert the example list to column vector format for training using Keras
     exampleX = np.vstack(tuple(exampleX))
-    print("ex:",exampleX.shape)
+    #print("ex:",exampleX.shape)
     exampleY = np.vstack(tuple(exampleY))
 
     return (exampleX, exampleY)
