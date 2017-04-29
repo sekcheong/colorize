@@ -266,8 +266,6 @@ def imageShow(img):
         cv2.destroyAllWindows()
 
 
-
-
 if __name__ == '__main__':
 
     print("Creating model...", end='', flush=True)
@@ -296,10 +294,8 @@ if __name__ == '__main__':
     print ("Test examples :", len(testX))
 
 
-    print("Training  started...")
+    print("Training...")
     
-    #for i in range(config['epochsToRun']):
-
     model.fit(trainX, trainY,
                 validation_data=(tuneX, tuneY),
                 epochs     = config['epochsToRun'],
@@ -318,9 +314,7 @@ if __name__ == '__main__':
                     )
                 ]
               )
-
-    print("done")
-
+    
 
     # save model to JSON
     modelJson = model.to_json()
@@ -329,35 +323,5 @@ if __name__ == '__main__':
 
     # save weights to HDF5
     model.save_weights("../models/weights.h5")
-
-#END
-
-
-   #keras.utils.plot_model(model, to_file='model.png')
-
-    # print("Loading weights...")
-    # model = VGG16(include_top=True, weights='imagenet')
-    # print("done!")
-
-    # for l in model.layers:
-    #     for v in l.get_weights():
-    #         print (v.shape)
-
+  
     # plot_model(model, to_file='model.png')
-    # img_path = 'cat.jpg'
-    
-    # img = image.load_img(img_path, target_size=(224, 224))
-    
-    # x = image.img_to_array(img)
-
-    # x = np.expand_dims(x, axis=0)
-    # print('input1:', x.shape)
-
-    # x = preprocess_input(x)
-    # print('input2:', x)
-    # print('Input image shape:', x.shape)
-    # start = time.time()
-    # preds = model.predict(x)
-    # print('Predicted:', np.argmax(preds))
-    # end = time.time()
-    # print(end - start)
