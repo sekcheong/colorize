@@ -51,12 +51,15 @@ def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['
     
     colorChannelSize = 2*(int(imageWidth*downSamplingRate)*int(imageHeight*downSamplingRate))
 
-    #print("color size:", colorChannelSize)
+    print("color channel size:", colorChannelSize)
 
-    inputShape = _obtain_input_shape((imageWidth, imageHeight, 3), default_size=imageWidth,
-                                                                   min_size=48,
-                                                                   data_format=K.image_data_format(),
-                                                                   include_top=False)    
+    inputShape = _obtain_input_shape(
+        (imageWidth, imageHeight, 3), 
+        default_size=imageWidth,
+        min_size=48,
+        data_format=K.image_data_format(),
+        include_top=False
+    )
     
     imgInput = Input(shape=inputShape)
 
@@ -189,7 +192,15 @@ def makeOneExample(img):
     y = np.append(U, V)
     y = normalizeImage(y)    
     return x, y
-    
+
+
+def unpreprocessImage(x):
+    # un Zero-center by mean pixel
+    x[:, :, 0] += 103.939
+    x[:, :, 1] += 116.779
+    x[:, :, 2] += 123.68
+    return x.astype(dtype='uint8', copy=False)
+
 
 def makeExamples(images):
     (exampleX, exampleY) = ([], [])
@@ -198,11 +209,13 @@ def makeExamples(images):
         x = np.expand_dims(x, axis=0)
         x = x.astype(K.floatx(), copy=False)
         x = preprocess_input(x)
+        #print("x00:",x.shape)
         exampleX.append(x)        
         exampleY.append(y)
 
     #convert the example list to column vector format for training using Keras
     exampleX = np.vstack(tuple(exampleX))
+    print("ex:",exampleX.shape)
     exampleY = np.vstack(tuple(exampleY))
 
     return (exampleX, exampleY)
@@ -215,18 +228,23 @@ def normalizeImage(img):
 
 def denormalizeImage(img):
     img = ((img+1)/2.0)*255
-    return img.astype(dtype='int8', copy=False)
+    return img.astype(dtype='uint8', copy=False)
 
 
 def reconstructImage(x, y):
-    img = []
+    y = denormalizeImage(y)
+    y = np.hsplit(y, 2)
+    U = y[0].reshape(33, 33)
+    V = y[1].reshape(33, 33)
+    Y = x[:,:,0]
+    (Y, U, V) = imageDecompressColorSpace(Y, U, V)
+    img = imageYUV2RGB(Y, U, V)
     return img
 
 
 def loadOneImageSet(path, ratio=1.0):
     fileList = [f for f in os.listdir(path) if isImageFile(f)]
     fileList = fileList[:int(len(fileList)*ratio)]
-    
     images = []
     for fname in fileList:
         if isImageFile(fname):            
@@ -293,7 +311,6 @@ if __name__ == '__main__':
     print ("Tune examples :", len(tuneX))
     print ("Test examples :", len(testX))
 
-
     print("Training...")
     
     model.fit(trainX, trainY,
@@ -326,10 +343,10 @@ if __name__ == '__main__':
               )
 
 
-    # save model to JSON
-    modelJson = model.to_json()
-    with open("../models/colorize_model.json", "w") as jsonFile:
-        jsonFile.write(modelJson)
+    # # save model to JSON
+    # modelJson = model.to_json()
+    # with open("../models/colorize_model.json", "w") as jsonFile:
+    #     jsonFile.write(modelJson)
 
     # save weights to HDF5
     #model.save_weights("../models/weights.h5")

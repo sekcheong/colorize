@@ -21,3 +21,10 @@ width = img.shape[0]
 	G[:, :,0] = img_out[:,:,0] 
 	G[:, :,1] = img_out[:,:,0] 
 	G[:, :,2] = img_out[:,:,0] 
+
+
+
+	#reconstruct an image from training vector
+
+    image = reconstructImage(unpreprocessImage(trainX[0]), trainY[0])
+    imageShow(image)
