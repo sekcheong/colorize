@@ -5,6 +5,7 @@ import time
 import cv2
 import keras
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from keras.models import Model
 from keras.layers import Flatten
@@ -14,10 +15,11 @@ from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import GlobalMaxPooling2D
 from keras.layers import GlobalAveragePooling2D
-from keras import losses
-from keras import backend as K
 from keras.applications.imagenet_utils import _obtain_input_shape
 from keras.applications.imagenet_utils import preprocess_input
+from keras import losses
+from keras import callbacks
+from keras import backend as K
 
 
 config = {
@@ -25,8 +27,8 @@ config = {
     'imageWidth'  : 224,
     'imageHeight' : 224,
     'downSample'  : 0.15,
-    'epochsToRun' : 20,
-    'batchSize'   : 5
+    'epochsToRun' : 1,
+    'batchSize'   : 10
 
 }
 
@@ -91,7 +93,7 @@ def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['
     x = Flatten(name='flatten')(x)
     x = Dense(4096, activation='relu', name='fc1')(x)
     x = Dense(4096, activation='relu', name='fc2')(x)
-    out = Dense(colorChannelSize, activation='sigmoid', name='colorize')(x)
+    out = Dense(colorChannelSize, activation='tanh', name='colorize')(x)
     
     model = Model(imgInput, out)
 
@@ -155,24 +157,6 @@ def imageConcat(images):
     return newImage
 
 
-def makeTrainExample(img):
-    (Y, U, V) = imageRGB2YUV(img)
-    (Y, U, V) = imageCompressColorSpace(Y, U, V)
-
-    #use the intensity as input image
-    x = imageFromComponent(Y)
-
-    #imageShow(Y)
-    #imageShow(U)
-    #imageShow(V)
-    
-    #convert the U, V components to 1D array
-    U = U.ravel()
-    V = V.ravel()
-    y = np.append(U,V)    
-    return x, y
-
-
 def isImageFile(name):
     fn = name.lower()
     return name.endswith(".jpg") or name.endswith(".png") or name.endswith(".jpeg")
@@ -186,6 +170,57 @@ def loadImages(path):
             img = imageLoad(imgPath)
             images.append(img)
     return images
+
+
+def makeOneExample(img):
+    (Y, U, V) = imageRGB2YUV(img)
+    (Y, U, V) = imageCompressColorSpace(Y, U, V)
+
+    #use the intensity as input image
+    x = imageFromComponent(Y)
+
+    #imageShow(Y)
+    #imageShow(U)
+    #imageShow(V)
+    
+    #convert the U, V components to 1D arrays
+    U = U.ravel()
+    V = V.ravel()
+    y = np.append(U, V)
+    y = normalizeImage(y)    
+    return x, y
+    
+
+def makeExamples(images):
+    (exampleX, exampleY) = ([], [])
+    for img in images:
+        (x, y) = makeOneExample(img)
+        x = np.expand_dims(x, axis=0)
+        x = x.astype(K.floatx(), copy=False)
+        x = preprocess_input(x)
+        exampleX.append(x)        
+        exampleY.append(y)
+
+    #convert the example list to column vector format for training using Keras
+    exampleX = np.vstack(tuple(exampleX))
+    exampleY = np.vstack(tuple(exampleY))
+
+    return (exampleX, exampleY)
+
+
+def normalizeImage(img):
+    img = (img/255.0)*2-1
+    return img.astype(dtype='float32', copy=False)
+
+
+def denormalizeImage(img):
+    img = ((img+1)/2.0)*255
+    return img.astype(dtype='int8', copy=False)
+
+
+def reconstructImage(x, y):
+    img = []
+    return img
 
 
 def loadOneImageSet(path, ratio=1.0):
@@ -205,38 +240,16 @@ def loadDataSet(basePath, ratio=1.0):
     trainPath = os.path.join(basePath, 'train')
     tunePath  = os.path.join(basePath, 'tune')
     testPath  = os.path.join(basePath, 'test')
-
-    #trainX = np.empty(shape=(1, 224, 224, 3), dtype=K.floatx())
-    #trainY = np.empty(shape=(2178,), dtype=K.floatx())
-    (trainX, trainY, tuneX, tuneY, testX, testY) = ([], [], [], [], [], [])
    
-    for img in loadOneImageSet(trainPath, 0.1):
-        (x, y) = makeTrainExample(img)
-        x = np.expand_dims(x, axis=0)
-        x = x.astype(K.floatx(), copy=False)
-        x = preprocess_input(x)
-        trainX.append(x)
-        trainY.append(y)
+    images = loadOneImageSet(trainPath, ratio)
+    (trainX, trainY) = makeExamples(images)
 
-    for img in loadOneImageSet(tunePath, 0.1):
-        (x, y) = makeTrainExample(img)
-        x = np.expand_dims(x, axis=0)
-        x = x.astype(K.floatx(), copy=False)
-        x = preprocess_input(x)
-        tuneX.append(x)
-        tuneY.append(y)
+    images = loadOneImageSet(tunePath, ratio)
+    (tuneX, tuneY) = makeExamples(images)
 
-    for img in loadOneImageSet(testPath, 0.1):
-        (x, y) = makeTrainExample(img)
-        x = np.expand_dims(x, axis=0)
-        x = x.astype(K.floatx(), copy=False)
-        x = preprocess_input(x)
-        testX.append(x)
-        testY.append(y)
+    images = loadOneImageSet(testPath, ratio)
+    (testX, testY) = makeExamples(images)
     
-    trainX = np.vstack(tuple(trainX))
-    trainY = np.vstack(tuple(trainY))
-
     return (trainX, trainY), (tuneX, tuneY), (testX, testY) 
 
 
@@ -260,18 +273,21 @@ if __name__ == '__main__':
     print("Creating model...", end='', flush=True)
     start = time.time()
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)    
-    opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=1e-6, nesterov=False)
-    end = time.time()
-    print("done. ", "elapsedTime=", end-start)
-
+    #opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=0.0008, nesterov=False)
+    
+    opt = keras.optimizers.SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)    
     model = makeColorizeModel()
     model.compile(optimizer = opt,
                   loss='mean_squared_error',
                   metrics = ['accuracy'])
 
+    end = time.time()
+    print("done. ", "elapsedTime=", end-start)
+
+
     start = time.time()
     print("Loading data set...", end='', flush=True)
-    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images')
+    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.01)
     end = time.time()
     print("done. ", "elapsedTime=", end-start)
 
@@ -279,58 +295,42 @@ if __name__ == '__main__':
     print ("Tune examples :", len(tuneX))
     print ("Test examples :", len(testX))
 
+
+    print("Training  started...")
     
-    print("Training  started...", end='', flush=True)
-    for i in range(config['epochsToRun']):
-        model.fit(trainX, trainY,
-              epochs     = 1,
-              batch_size = config['batchSize'],
-              shuffle    = True)
+    #for i in range(config['epochsToRun']):
+
+    model.fit(trainX, trainY,
+                validation_data=(tuneX, tuneY),
+                epochs     = config['epochsToRun'],
+                batch_size = config['batchSize'],
+                shuffle    = True,
+                verbose    = 1,
+                callbacks  = [
+                    callbacks.ModelCheckpoint(
+                        '../models/colorize_weights.hdf5',
+                        monitor='val_loss',
+                        verbose=0,
+                        save_best_only=False,
+                        save_weights_only=True,
+                        mode='auto',
+                        period=1
+                    )
+                ]
+              )
 
     print("done")
 
 
-    # serialize model to JSON    
-    model_json = model.to_json()
-    with open("model.json", "w") as json_file:
-        json_file.write(model_json)
-    
-    # serialize weights to HDF5
-    model.save_weights("model.h5")
-    print("Saved model to disk")
-
-    #keras.utils.plot_model(model, to_file='model.png')
-
-
-    # img = imageLoad('../images/processed/im5.jpg')
-    # x, y = makeTrainExample(img)
-
-    # imageShow(x)
-    # a, b = loadData()
-
-    # print(a, ",", b)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # save model to JSON
+    modelJson = model.to_json()
+    with open("../models/colorize_model.json", "w") as jsonFile:
+        jsonFile.write(modelJson)
 
 #END
 
 
-
+   #keras.utils.plot_model(model, to_file='model.png')
 
     # print("Loading weights...")
     # model = VGG16(include_top=True, weights='imagenet')
