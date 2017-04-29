@@ -28,7 +28,7 @@ config = {
     'imageHeight' : 224,
     'downSample'  : 0.15,
     'epochsToRun' : 10,
-    'batchSize'   : 10
+    'batchSize'   : 25
 
 }
 
@@ -291,7 +291,7 @@ if __name__ == '__main__':
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-6)    
     #opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=0.0008, nesterov=False)
     
-    opt = keras.optimizers.SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)    
+    opt = keras.optimizers.SGD(lr=0.05, decay=1e-6, momentum=0.9, nesterov=True)    
     model = makeColorizeModel()
     model.compile(optimizer = opt,
                   loss='mean_squared_error',
@@ -303,7 +303,7 @@ if __name__ == '__main__':
 
     start = time.time()
     print("Loading data set...", end='', flush=True)
-    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.01)
+    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 1)
     end = time.time()
     print("done. ", "elapsedTime=", end-start)
 
