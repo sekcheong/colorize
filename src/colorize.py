@@ -27,7 +27,7 @@ config = {
     'imageWidth'  : 224,
     'imageHeight' : 224,
     'downSample'  : 0.15,
-    'epochsToRun' : 10,
+    'epochsToRun' : 15,
     'batchSize'   : 20
 
 }
@@ -299,7 +299,7 @@ if __name__ == '__main__':
 
     end = time.time()
     print("done. ", "elapsedTime=", end-start)
-
+    model.summary()
 
     start = time.time()
     print("Loading data set...", end='', flush=True)
