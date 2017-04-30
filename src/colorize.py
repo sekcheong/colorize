@@ -18,6 +18,7 @@ from keras.layers import MaxPooling2D
 from keras.layers import GlobalMaxPooling2D
 from keras.layers import GlobalAveragePooling2D
 from keras.layers import Dropout
+from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.normalization import BatchNormalization
 from keras.applications.imagenet_utils import _obtain_input_shape
 from keras.applications.imagenet_utils import preprocess_input
@@ -330,7 +331,7 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
     model.add(
         Dense(
             units = 1024, 
-            activation = 'relu', 
+            activation = LeakyReLU(alpha=0.3),
             kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
             name = 'fc2'
         )
