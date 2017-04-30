@@ -32,11 +32,11 @@ config = {
     'imageWidth'    : 224,
     'imageHeight'   : 224,
     'downSample'    : 0.15,
-    'epochsToRun'   : 10,
+    'epochsToRun'   : 50,
     'learnRate'     : 0.05,
     'batchSize'     : 10,
     'dropoutRate'   : 0.5,
-    'samplePrecent' : 0.05,
+    'samplePrecent' : 0.25,
 
 }
 
