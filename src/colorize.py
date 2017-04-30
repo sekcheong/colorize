@@ -299,6 +299,25 @@ def imageShow(img):
 
 def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
+    #load the vgg16 pre trained weights
+    print("Loading pre-trained weights...")
+    
+    model.load_weights("../models/vgg16_weights.h5")
+    model.pop()
+    
+    model.add(
+        Dropout(config['finalDropout'])
+    )
+
+    model.add(
+        Dense(
+            units = 2178, 
+            activation = 'tanh', 
+            kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
+            name = 'colorize'
+        )
+    )
+
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-6)    
     #opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=0.0008, nesterov=False)
 
@@ -309,13 +328,11 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
         nesterov = True
     )    
     
-    m = model.compile(
+    model.compile(
         optimizer = opt,
         loss      = mseLoss,
         metrics   = ['accuracy']
-        )
-
-    print("Training...")
+    )    
 
     model.fit(trainX, trainY,
                 validation_data = (tuneX, tuneY),
@@ -361,8 +378,7 @@ def predictColorizeModel(model, testX, testY):
     #     print('U=',U)
     #     print('V=',V)
 
-    for i in range(y.shape[0]):
-        print(i)
+    for i in range(y.shape[0]):        
         x = unpreprocessImage(testX[i])
         example = x
         predict = reconstructImage(x, y[i])
@@ -382,38 +398,15 @@ def colorize(model, x, y):
 
 if __name__ == '__main__':
 
-    start = time.time()
-    print("Loading data set...", end='', flush=True)
-    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.01)
-    end = time.time()
-    print("done. ", "elapsedTime=", end-start)
+    
+    print("Loading training data set...")
+    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.01)        
 
     print ("Train examples:", len(trainX))
     print ("Tune examples :", len(tuneX))
     print ("Test examples :", len(testX))
-
-    print("Creating model...", end='', flush=True)
-    start = time.time()    
+    
     model = makeColorizeModel()
-    end = time.time()
-    print("done. ", "elapsedTime=", end-start)
-    
-    #load the vgg16 pre trained weights
-    model.load_weights("../models/vgg16_weights.h5")
-    model.pop()
-    
-    model.add(
-        Dropout(config['finalDropout'])
-    )
-
-    model.add(
-        Dense(
-            units = 2178, 
-            activation = 'tanh', 
-            kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
-            name = 'colorize'
-        )
-    )
 
     model.summary()
 
