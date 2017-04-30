@@ -1,11 +1,14 @@
 import os
-import numpy as np
-import warnings
-import time
 import cv2
 import keras
+import numpy as np
 import tensorflow as tf
+import time
+import datetime
+import warnings
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
 
 from keras.models import Model
 from keras.models import Sequential
@@ -18,6 +21,7 @@ from keras.layers import MaxPooling2D
 from keras.layers import GlobalMaxPooling2D
 from keras.layers import GlobalAveragePooling2D
 from keras.layers import Dropout
+from keras.layers.core import Activation
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.normalization import BatchNormalization
 from keras.applications.imagenet_utils import _obtain_input_shape
@@ -29,14 +33,15 @@ from keras import backend as K
 
 config = {
 
-    'imageWidth'    : 224,
-    'imageHeight'   : 224,
-    'downSample'    : 0.15,
-    'epochsToRun'   : 50,
-    'learnRate'     : 0.05,
-    'batchSize'     : 10,
-    'dropoutRate'   : 0.5,
-    'samplePrecent' : 0.25,
+    'imageWidth'       : 224,
+    'imageHeight'      : 224,
+    'downSample'       : 0.15,
+    'epochsToRun'      : 50,
+    'learnRate'        : 0.05,
+    'batchSize'        : 10,
+    'dropoutRate'      : 0.5,
+    'samplePrecent'    : 1500/7000,
+    'checkpointPeriod' : 5,
 
 }
 
@@ -306,7 +311,7 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
     #load the vgg16 pre trained weights
     print("Loading pre-trained weights...")
     
-    model.load_weights("../models/vgg16_weights.h5")
+    model.load_weights("../models/vgg/vgg16_weights.h5")
     model.pop()
     model.pop()
     model.pop()
@@ -317,24 +322,30 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
     model.add(
         Dense(
-            units = 1024, 
-            activation = 'relu', 
+            units = 1536,    
             kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
             name = 'fc1'
         )
     )
 
     model.add(
+        LeakyReLU(alpha=0.3)
+    )
+
+    model.add(
         Dropout(config['dropoutRate'])
     )
 
     model.add(
         Dense(
-            units = 1024, 
-            activation = LeakyReLU(alpha=0.3),
+            units = 1536,            
             kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
             name = 'fc2'
         )
+    )
+
+    model.add(
+        LeakyReLU(alpha=0.3)
     )
 
     model.add(
@@ -347,11 +358,14 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
     model.add(
         Dense(
-            units = 2178, 
-            activation = 'tanh', 
+            units = 2178,             
             kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
             name = 'colorize'
         )
+    )
+
+    model.add(
+        Activation('tanh')
     )
 
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-6)    
@@ -372,7 +386,7 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
     model.summary()
 
-    model.fit(trainX, trainY,
+    history = model.fit(trainX, trainY,
                 validation_data = (tuneX, tuneY),
                 epochs     = config['epochsToRun'],
                 batch_size = config['batchSize'],
@@ -380,30 +394,62 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
                 verbose    = 1,
                 callbacks  = [
 
-                    callbacks.ModelCheckpoint(
-                        '../models/colorize_weights_checkpoint.h5',
+                    callbacks.ModelCheckpoint(                        
+                        '../models/checkpoints/colorize_weights.{epoch:02d}-{val_loss:.2f}.h5',
                         monitor           = 'val_loss',
                         verbose           = 0,
                         save_best_only    = False,
                         save_weights_only = True,
                         mode              = 'auto',
-                        period            = 1
+                        period            = config['checkpointPeriod']
                     ),
 
                     # callbacks.EarlyStopping(
-                    #     monitor           = 'val_loss',                         
-                    #     patience          = 2, 
-                    #     verbose           = 0,
-                    #     mode              = 'auto'
+                    #      monitor           = 'val_loss',                         
+                    #      patience          = 2, 
+                    #      verbose           = 0,
+                    #      mode              = 'auto'
                     # )
 
                 ]
               )
 
+    # save the model 
+    json = model.to_json()
+    open('../models/colorize_model.json', 'w').write(json)
+    
+    # save the weights
+    model.save_weights('../models/colorize_weights.h5', overwrite=True)
+
+    open('history.json', 'w').write(str(history.history))
+
+    # summarize history for accuracy
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('Model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    #plt.savefig('model_accuracy.png', dpi=600)
+    plt.show()
+    
+    # summarize history for loss
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')    
+    plt.show()
+
+    # get the time stamp
+    #timestamp = datetime.datetime.now().strftime('%Y-%m-%d.%H%M%S')
+    #model.save_weights('../models/colorize_weights.'+timestamp+'.h5')
+
 
 def predictColorizeModel(model, testX, testY):
 
-    model.load_weights('../models/colorize_weights_checkpoint.h5')
+    model.load_weights('../models/colorize_weights.h5')
    
     y = model.predict(testX)
 
@@ -436,7 +482,8 @@ def colorize(model, x, y):
 
 if __name__ == '__main__':
 
-    
+    np.random.seed(838*838)
+
     print("Loading training data set...")
     (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', config['samplePrecent'])
 
