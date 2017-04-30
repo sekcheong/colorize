@@ -8,13 +8,16 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from keras.models import Model
+from keras.models import Sequential
 from keras.layers import Flatten
 from keras.layers import Dense
 from keras.layers import Input
+from keras.layers import InputLayer
 from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import GlobalMaxPooling2D
 from keras.layers import GlobalAveragePooling2D
+from keras.layers import Dropout
 from keras.applications.imagenet_utils import _obtain_input_shape
 from keras.applications.imagenet_utils import preprocess_input
 from keras import losses
@@ -24,14 +27,18 @@ from keras import backend as K
 
 config = {
 
-    'imageWidth'  : 224,
-    'imageHeight' : 224,
-    'downSample'  : 0.15,
-    'epochsToRun' : 10,
-    'batchSize'   : 25
+    'imageWidth'   : 224,
+    'imageHeight'  : 224,
+    'downSample'   : 0.15,
+    'epochsToRun'  : 10,
+    'batchSize'    : 10,
+    'finalDropout' : 0.5
 
 }
 
+
+def mseLoss(y_true, y_pred):
+    return K.mean(K.square(y_pred - y_true), axis=-1)
 
 def euclideanLoss(y_true, y_pred):
     d = tf.constant(3.0, tf.float32)
@@ -47,58 +54,54 @@ def euclideanLoss(y_true, y_pred):
     return l2
 
 
+def computeColorChannelSize(imageWidth=224, imageHeight=224, downSamplingRate=config['downSample']):
+    return 2*(int(imageWidth*downSamplingRate)*int(imageHeight*downSamplingRate))
+
+
 def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['downSample']):
     
-    colorChannelSize = 2*(int(imageWidth*downSamplingRate)*int(imageHeight*downSamplingRate))
+    colorChannelSize = computeColorChannelSize(imageWidth, imageHeight, downSamplingRate)
 
-    print("color channel size:", colorChannelSize)
+    print("color channel size:", colorChannelSize)    
 
-    inputShape = _obtain_input_shape(
-        (imageWidth, imageHeight, 3), 
-        default_size=imageWidth,
-        min_size=48,
-        data_format=K.image_data_format(),
-        include_top=False
-    )
+    model = Sequential()   
     
-    imgInput = Input(shape=inputShape)
+    # The input layer
+    model.add(InputLayer(input_shape = [imageHeight, imageWidth, 3]))
 
     # Block 1
-    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(imgInput)
-    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1'))
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool'))
 
     # Block 2
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
-
+    model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1'))
+    model.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool'))
 
     # Block 3
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1'))
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2'))
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool'))
 
     # Block 4
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool'))
 
     # Block 5
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool')(x)
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2'))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool'))
 
     # Final FC layers
-    x = Flatten(name='flatten')(x)
-    x = Dense(4096, activation='relu', name='fc1')(x)
-    x = Dense(4096, activation='relu', name='fc2')(x)
-    out = Dense(colorChannelSize, activation='tanh', name='colorize')(x)
-    
-    model = Model(imgInput, out)
+    model.add(Flatten(name='flatten'))
+    model.add(Dense(4096, activation='relu', name='fc1'))
+    model.add(Dense(4096, activation='relu', name='fc2'))
+    model.add(Dense(1000, activation='tanh', name='colorize'))
 
     return model
 
@@ -292,15 +295,16 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
     opt = keras.optimizers.SGD(lr=0.05, decay=1e-6, momentum=0.9, nesterov=True)    
     
-    model.compile(optimizer = opt,
-                  loss='mean_squared_error',
-                  metrics = ['accuracy']
-                  )
+    m = model.compile(
+        optimizer = opt,
+        loss      = mseLoss,
+        metrics   = ['accuracy']
+        )
 
     print("Training...")
 
     model.fit(trainX, trainY,
-                validation_data=(tuneX, tuneY),
+                validation_data = (tuneX, tuneY),
                 epochs     = config['epochsToRun'],
                 batch_size = config['batchSize'],
                 shuffle    = True,
@@ -315,13 +319,12 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
                         save_weights_only = True,
                         mode              = 'auto',
                         period            = 1
-                    )
+                    ),
 
                     # callbacks.EarlyStopping(
-                    #     monitor           = 'val_loss', 
-                    #     min_delta         = 0, 
-                    #     patience          = 0, 
-                    #     verbose           = 0, 
+                    #     monitor           = 'val_loss',                         
+                    #     patience          = 2, 
+                    #     verbose           = 0,
                     #     mode              = 'auto'
                     # )
 
@@ -351,13 +354,33 @@ if __name__ == '__main__':
     model = makeColorizeModel()
     end = time.time()
     print("done. ", "elapsedTime=", end-start)
+    
+    #load the vgg16 pre trained weights
+    model.load_weights("../models/vgg16_weights.h5")
+    model.pop()
+    
+    model.add(
+        Dropout(config['finalDropout'])
+    )
+
+    model.add(
+        Dense(
+            units = 2178, 
+            activation = 'tanh', 
+            kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
+            name = 'colorize'
+        )
+    )
+
     model.summary()
-    model.load_weights("../models/colorize_weights.h5")
+    
+
+    trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
 
     y = model.predict(trainX)
     
-    #img2 = imageYUV2RGB(Y, U, V)
-    #cv2.imshow('image', imageConcat([img, img2]) )
+    # #img2 = imageYUV2RGB(Y, U, V)
+    # #cv2.imshow('image', imageConcat([img, img2]) )
 
     for i in range(y.shape[0]):
         print(i)
@@ -367,9 +390,8 @@ if __name__ == '__main__':
         groundTruth = reconstructImage(x, trainY[i])
         img = imageConcat([example, predict, groundTruth])
         imageShow(img)
+        cv2.imwrite('out'+i+'.jpg', img)
     
-
-    #trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
 
     # # save model to JSON
     # modelJson = model.to_json()
