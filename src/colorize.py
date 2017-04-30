@@ -18,6 +18,7 @@ from keras.layers import MaxPooling2D
 from keras.layers import GlobalMaxPooling2D
 from keras.layers import GlobalAveragePooling2D
 from keras.layers import Dropout
+from keras.layers.normalization import BatchNormalization
 from keras.applications.imagenet_utils import _obtain_input_shape
 from keras.applications.imagenet_utils import preprocess_input
 from keras import losses
@@ -27,13 +28,14 @@ from keras import backend as K
 
 config = {
 
-    'imageWidth'   : 224,
-    'imageHeight'  : 224,
-    'downSample'   : 0.15,
-    'epochsToRun'  : 100,
-    'learnRate'    : 0.05,
-    'batchSize'    : 10,
-    'dropoutRate'  : 0.5,
+    'imageWidth'    : 224,
+    'imageHeight'   : 224,
+    'downSample'    : 0.15,
+    'epochsToRun'   : 10,
+    'learnRate'     : 0.05,
+    'batchSize'     : 10,
+    'dropoutRate'   : 0.5,
+    'samplePrecent' : 0.05,
 
 }
 
@@ -339,6 +341,10 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
     )
 
     model.add(
+        BatchNormalization()
+    )
+
+    model.add(
         Dense(
             units = 2178, 
             activation = 'tanh', 
@@ -431,7 +437,7 @@ if __name__ == '__main__':
 
     
     print("Loading training data set...")
-    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.1)        
+    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', config['samplePrecent'])
 
     print ("Train examples:", len(trainX))
     print ("Tune examples :", len(tuneX))
