@@ -30,12 +30,13 @@ config = {
     'imageWidth'   : 224,
     'imageHeight'  : 224,
     'downSample'   : 0.15,
-    'epochsToRun'  : 10,
+    'epochsToRun'  : 100,
     'learnRate'    : 0.05,
     'batchSize'    : 10,
-    'finalDropout' : 0.5,
+    'dropoutRate'  : 0.5,
 
 }
+
 
 ## The mean square error loss function 
 #  @param y_ture: The ground truth of the value
@@ -111,7 +112,7 @@ def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['
     model.add(Flatten(name='flatten'))
     model.add(Dense(4096, activation='relu', name='fc1'))
     model.add(Dense(4096, activation='relu', name='fc2'))
-    model.add(Dense(1000, activation='tanh', name='colorize'))
+    model.add(Dense(1000, activation='tanh', name='output'))
 
     return model
 
@@ -304,9 +305,37 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
     
     model.load_weights("../models/vgg16_weights.h5")
     model.pop()
-    
+    model.pop()
+    model.pop()
+
     model.add(
-        Dropout(config['finalDropout'])
+        Dropout(config['dropoutRate'])
+    )
+
+    model.add(
+        Dense(
+            units = 1024, 
+            activation = 'relu', 
+            kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
+            name = 'fc1'
+        )
+    )
+
+    model.add(
+        Dropout(config['dropoutRate'])
+    )
+
+    model.add(
+        Dense(
+            units = 1024, 
+            activation = 'relu', 
+            kernel_initializer = keras.initializers.lecun_uniform(seed=None), 
+            name = 'fc2'
+        )
+    )
+
+    model.add(
+        Dropout(config['dropoutRate'])
     )
 
     model.add(
@@ -323,8 +352,8 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
     opt = keras.optimizers.SGD(
         lr       = config['learnRate'],
-        decay    = 1e-6, 
-        momentum = 0.9, 
+        decay    = 0.00008, 
+        momentum = 0.9,
         nesterov = True
     )    
     
@@ -333,6 +362,8 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
         loss      = mseLoss,
         metrics   = ['accuracy']
     )    
+
+    model.summary()
 
     model.fit(trainX, trainY,
                 validation_data = (tuneX, tuneY),
@@ -400,14 +431,13 @@ if __name__ == '__main__':
 
     
     print("Loading training data set...")
-    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.01)        
+    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.1)        
 
     print ("Train examples:", len(trainX))
     print ("Tune examples :", len(tuneX))
     print ("Test examples :", len(testX))
     
     model = makeColorizeModel()
-
     model.summary()
 
     trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
