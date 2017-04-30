@@ -31,14 +31,24 @@ config = {
     'imageHeight'  : 224,
     'downSample'   : 0.15,
     'epochsToRun'  : 10,
+    'learnRate'    : 0.05,
     'batchSize'    : 10,
-    'finalDropout' : 0.5
+    'finalDropout' : 0.5,
 
 }
 
-
-def mseLoss(y_true, y_pred):
+## The mean square error loss function 
+#  @param y_ture: The ground truth of the value
+#  @param y_pred: The predicted value
+#  @return: Returns a sentence with your variables in it
+def mseLoss(y_true, y_pred):    
+    # return K.square(y_pred - y_true)
     return K.mean(K.square(y_pred - y_true), axis=-1)
+
+
+def maeLoss(y_true, y_pred):
+    return K.mean(K.abs(y_pred - y_true), axis=-1)
+
 
 def euclideanLoss(y_true, y_pred):
     d = tf.constant(3.0, tf.float32)
@@ -212,8 +222,7 @@ def makeExamples(images):
         (x, y) = makeOneExample(img)
         x = np.expand_dims(x, axis=0)
         x = x.astype(K.floatx(), copy=False)
-        x = preprocess_input(x)
-        #print("x00:",x.shape)
+        x = preprocess_input(x)        
         exampleX.append(x)        
         exampleY.append(y)
 
@@ -293,7 +302,12 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-6)    
     #opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=0.0008, nesterov=False)
 
-    opt = keras.optimizers.SGD(lr=0.05, decay=1e-6, momentum=0.9, nesterov=True)    
+    opt = keras.optimizers.SGD(
+        lr       = config['learnRate'],
+        decay    = 1e-6, 
+        momentum = 0.9, 
+        nesterov = True
+    )    
     
     m = model.compile(
         optimizer = opt,
@@ -330,6 +344,35 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
                 ]
               )
+
+
+def predictColorizeModel(model, testX, testY):
+
+    model.load_weights('../models/colorize_weights_checkpoint.h5')
+   
+    y = model.predict(testX)
+
+    # for i in range(y.shape[0]):        
+    #     z = y[i]
+    #     z = denormalizeImage(z)
+    #     z = np.hsplit(z, 2)
+    #     U = z[0].reshape(33, 33)
+    #     V = z[1].reshape(33, 33)
+    #     print('U=',U)
+    #     print('V=',V)
+
+    for i in range(y.shape[0]):
+        print(i)
+        x = unpreprocessImage(testX[i])
+        example = x
+        predict = reconstructImage(x, y[i])
+        groundTruth = reconstructImage(x, testY[i])
+        img = imageConcat([groundTruth, example, predict])
+        cv2.imwrite('../images/out/im{:d}.jpg'.format(i), img)
+        
+        #preview the last image
+        if (i==y.shape[0]-1):
+            imageShow(img)
 
 
 def colorize(model, x, y):
@@ -373,32 +416,7 @@ if __name__ == '__main__':
     )
 
     model.summary()
-    
 
     trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
 
-    y = model.predict(trainX)
-    
-    # #img2 = imageYUV2RGB(Y, U, V)
-    # #cv2.imshow('image', imageConcat([img, img2]) )
-
-    for i in range(y.shape[0]):
-        print(i)
-        x = unpreprocessImage(trainX[i])
-        example = x
-        predict = reconstructImage(x, y[i])
-        groundTruth = reconstructImage(x, trainY[i])
-        img = imageConcat([example, predict, groundTruth])
-        imageShow(img)
-        cv2.imwrite('out'+i+'.jpg', img)
-    
-
-    # # save model to JSON
-    # modelJson = model.to_json()
-    # with open("../models/colorize_model.json", "w") as jsonFile:
-    #     jsonFile.write(modelJson)
-
-    # save weights to HDF5
-    #model.save_weights("../models/weights.h5")
-  
-    # plot_model(model, to_file='model.png')
+    predictColorizeModel(model, testX, testY)
