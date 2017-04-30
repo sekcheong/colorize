@@ -196,6 +196,7 @@ def makeOneExample(img):
 
 def unpreprocessImage(x):
     # un Zero-center by mean pixel
+    x = np.copy(x)
     x[:, :, 0] += 103.939
     x[:, :, 1] += 116.779
     x[:, :, 2] += 123.68
@@ -284,35 +285,20 @@ def imageShow(img):
         cv2.destroyAllWindows()
 
 
-if __name__ == '__main__':
+def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
-    print("Creating model...", end='', flush=True)
-    start = time.time()
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-6)    
     #opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=0.0008, nesterov=False)
-    
+
     opt = keras.optimizers.SGD(lr=0.05, decay=1e-6, momentum=0.9, nesterov=True)    
-    model = makeColorizeModel()
+    
     model.compile(optimizer = opt,
                   loss='mean_squared_error',
-                  metrics = ['accuracy'])
-
-    end = time.time()
-    print("done. ", "elapsedTime=", end-start)
-    model.summary()
-
-    start = time.time()
-    print("Loading data set...", end='', flush=True)
-    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 1)
-    end = time.time()
-    print("done. ", "elapsedTime=", end-start)
-
-    print ("Train examples:", len(trainX))
-    print ("Tune examples :", len(tuneX))
-    print ("Test examples :", len(testX))
+                  metrics = ['accuracy']
+                  )
 
     print("Training...")
-    
+
     model.fit(trainX, trainY,
                 validation_data=(tuneX, tuneY),
                 epochs     = config['epochsToRun'],
@@ -342,6 +328,48 @@ if __name__ == '__main__':
                 ]
               )
 
+
+def colorize(model, x, y):
+    img = reconstructImage(x, y)
+    return img
+
+
+if __name__ == '__main__':
+
+    start = time.time()
+    print("Loading data set...", end='', flush=True)
+    (trainX, trainY), (tuneX, tuneY), (testX, testY) = loadDataSet('../images', 0.01)
+    end = time.time()
+    print("done. ", "elapsedTime=", end-start)
+
+    print ("Train examples:", len(trainX))
+    print ("Tune examples :", len(tuneX))
+    print ("Test examples :", len(testX))
+
+    print("Creating model...", end='', flush=True)
+    start = time.time()    
+    model = makeColorizeModel()
+    end = time.time()
+    print("done. ", "elapsedTime=", end-start)
+    model.summary()
+    model.load_weights("../models/colorize_weights.h5")
+
+    y = model.predict(trainX)
+    
+    #img2 = imageYUV2RGB(Y, U, V)
+    #cv2.imshow('image', imageConcat([img, img2]) )
+
+    for i in range(y.shape[0]):
+        print(i)
+        x = unpreprocessImage(trainX[i])
+        example = x
+        predict = reconstructImage(x, y[i])
+        groundTruth = reconstructImage(x, trainY[i])
+        img = imageConcat([example, predict, groundTruth])
+        imageShow(img)
+    
+
+    #trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
 
     # # save model to JSON
     # modelJson = model.to_json()
