@@ -17,26 +17,23 @@
 \begin{document}
 
 
-\title{CS838 Progress Report}
+\title{CS838 Progress Progress Report}
 \author{Sek Cheong}
 \maketitle
 
-\begin{abstract}
-This project is an attempt to build a deep convolutional neural network (CNN) to colorize black and white images. The net will take a black and white image and output a colorized image. In this project, we use a pre-trained model, VGG16~\cite{vgg16}, to extract features that will be used for training our network for colorizing. We hope to gain some insight on how deep learn features from natural image and the technique of transfer learning.
-\end{abstract}
 
-\section{Introduction}
+\section{Background}
 Colorize old black and white photos used to be done manually by trained specialists. It is a tedious and time consuming process. With the invention of photo touching softwares, colorization can be done much easier, but it still requires human intervention. In this project we explorer the use of deep CNN to colorize black and white images automatically. 
 
 
 As a result of the ImageNet competitions, there are a number of sophisticated CNN models and their trained weights made available for public use. Rather than training our own model from scratch, which can be very time consuming and difficult, it is better to start with a pre-trained model from ImageNet and use the transfer learning technique to extract features learned in the pre-trained model to train out new model to colorize gray level images.
 
 
-\section{Data Set}
+\section{Progress}
 We use the images from ImageNet and number of open source image sets from the Internet. The training examples can be constructed by converting those color images into gray level images. The gray level images will be used as the feature vector and the color images will be used as the target value. Specifically, we transform the color space of a image from RGB to YUV space, where Y channel represents the intensity of the image and U, V channels represent the color information. We feed the content of Y channel to the model and use UV channels as the target value. 
 
 
-\section{Approach}
+\section{Challenges}
 We use VGG16 model as a starting point and forward an image into the VGG16 model, we then extract a few layers from the VGG model and downscale the image to match the extracted layers. The extracted layers should contain useful information of the image. We will construct a model based on the extracted layers to colorize images.  
 
 
@@ -46,16 +43,24 @@ Our model is basically a learned function that takes the gray level pixels as in
 We choose the Keras framework with Tensorflow backend for the experiment. We choose Keras due to its user friendlyness and the ability to use GPU as the computing core. The experiment will be carried out on a computer equipped with a 3.7GHz Intel quad core processor, 16G of memory and nVidia GeForce GTX 660 graphics card with 2G memory.  
 
 
-There is a pre-trained VGG16 model for Keras created by François Chollet~\cite{pretrainedmodel} from github, we plan to use this model and extend it to coloring images. 
+There is a pre-trained VGG16 model for Keras created by François Chollet~\cite{VGG16} from github, we plan to use this model and extend it to coloring images. 
 
 
 We split out constructed data set into the training, tune, and test set. We use a MSE of the each pixel of the colorized image and the true color image as a measure of accuracy. 
 
 
+\section{Remaining Work}
+
+Because preliminary results in the previous section raise interesting questions about the evacuation procedure, I would like to change my research to focus on that evacuation procedure, as opposed to discussing both the evacuation procedure and equipment. By focusing on the evacuation procedures, I believe that I can achieve more depth into a subject that could provide important safety lessons for engineers. 
 
 
+So far, I am on schedule with the research project. The open bars shown in Figure 1 present the timeline of work that I have yet to do to complete my research project by December 6, 1996. The two triangles indicate the important milestones for the project, the top one being the formal presentation (November 11) and the bottom one being the formal report (December 6). Most of the work remaining involves preparing a presentation on a portion of the research, drafting the final report, and revising the formal report. Because I am choosing a synopsis of the procedures for filling the lifeboats as my presentation topic (a topic that requires the presence of key images that will be used in the final report), I will have a head start on assembling important illustrations for the report.
 
 
-\bibliography{biblio}
+\section{Assessment}
+This progress report has updated you on the status of my research on the evacuation of the R.M.S. Titanic on the night of its sinking. As stated, I am on schedule and should complete the project by the original deadline, December 6, 1996. Because preliminary research has raised interesting questions about the evacuation procedures, I request permission to modify my original objectives, discussed in the proposal, to focus on those evacuation procedures. In doing so, I believe that I will attain depth into an interesting engineering aspect of the Titanic's sinking.
+
+
+\bibliography{progress}
 
 \end{document}

@@ -12,6 +12,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from keras.models import Model
 from keras.models import Sequential
+from keras.models import model_from_json
 from keras.layers import Flatten
 from keras.layers import Dense
 from keras.layers import Input
@@ -31,18 +32,21 @@ from keras import callbacks
 from keras import backend as K
 
 
+
 config = {
 
-    'imageWidth'       : 224,
-    'imageHeight'      : 224,
-    'downSample'       : 0.15,
-    'epochsToRun'      : 50,
-    'learnRate'        : 0.05,
-    'batchSize'        : 10,
-    'dropoutRate'      : 0.5,
-    'samplePrecent'    : 1500/7000,
-    'checkpointPeriod' : 5,
+    'imageWidth'                  : 224,
+    'imageHeight'                 : 224,
+    'colorDownSamplingRate'       : 0.15,
 
+    'epochsToRun'                 : 10,
+    'learnRate'                   : 0.05,
+    'batchSize'                   : 1,
+    'dropoutRate'                 : 0.5,
+    
+    'samplePrecent'               : 1500/7000,
+    'checkpointPeriod'            : 5,
+    'randomSeed'                  : 838*838,
 }
 
 
@@ -73,11 +77,11 @@ def euclideanLoss(y_true, y_pred):
     return l2
 
 
-def computeColorChannelSize(imageWidth=224, imageHeight=224, downSamplingRate=config['downSample']):
+def computeColorChannelSize(imageWidth=224, imageHeight=224, downSamplingRate=config['colorDownSamplingRate']):
     return 2*(int(imageWidth*downSamplingRate)*int(imageHeight*downSamplingRate))
 
 
-def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['downSample']):
+def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['colorDownSamplingRate']):
     
     colorChannelSize = computeColorChannelSize(imageWidth, imageHeight, downSamplingRate)
 
@@ -149,7 +153,7 @@ def imageYUV2RGB(Y, U, V):
     return img
 
 
-def imageCompressColorSpace(Y, U, V, ratio=config['downSample']):
+def imageCompressColorSpace(Y, U, V, ratio=config['colorDownSamplingRate']):
     U = cv2.resize(U, (int(U.shape[1]*ratio), int(U.shape[0]*ratio) ) , interpolation = cv2.INTER_CUBIC)
     V = cv2.resize(V, (int(V.shape[1]*ratio), int(V.shape[0]*ratio) ) , interpolation = cv2.INTER_CUBIC)
     return (Y, U, V)
@@ -203,10 +207,6 @@ def makeOneExample(img):
 
     #use the intensity as input image
     x = imageFromComponent(Y)
-
-    #imageShow(Y)
-    #imageShow(U)
-    #imageShow(V)
     
     #convert the U, V components to 1D arrays
     U = U.ravel()
@@ -307,10 +307,8 @@ def imageShow(img):
 
 
 def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
-
     #load the vgg16 pre trained weights
     print("Loading pre-trained weights...")
-    
     model.load_weights("../models/vgg/vgg16_weights.h5")
     model.pop()
     model.pop()
@@ -449,8 +447,13 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
 def predictColorizeModel(model, testX, testY):
 
-    model.load_weights('../models/colorize_weights.h5')
-   
+    json = open('../models/colorize_model.json').read()
+    model = model_from_json(json)  
+    model.summary()
+    print("Load trained weights...")
+    model.load_weights('../models/colorize_weights.29-0.03.h5')
+
+    print("Colorizing images...")
     y = model.predict(testX)
 
     # for i in range(y.shape[0]):        
@@ -480,6 +483,8 @@ def colorize(model, x, y):
     return img
 
 
+
+
 if __name__ == '__main__':
 
     np.random.seed(838*838)
@@ -494,6 +499,6 @@ if __name__ == '__main__':
     model = makeColorizeModel()
     model.summary()
 
-    trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
+    #trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
 
     predictColorizeModel(model, testX, testY)
