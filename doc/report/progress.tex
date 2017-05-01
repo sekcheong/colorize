@@ -11,6 +11,7 @@
 \usepackage{hhline}
 \usepackage{float}
 \usepackage{caption} 
+\usepackage{enumitem}
 
 \captionsetup[table]{skip=10pt}
 
@@ -123,7 +124,7 @@ We discarded $85\%$ of the color information, that is we resize the chrominance 
 
 
 \subsection{Training}
-We trained out model on $1500$ images with $50$ epoch, the training set is hardly large enough to train a complex task such as colorization, but due to the limited computing resources (more on that in the Challenges section) and time constrain, we had to settle with $1500$ samples. The training process took about $25$ hours to complete. 
+We trained out model on $1500$ images with $50$ epoch, the training set is hardly large enough to train a complex task such as colorization, but due to the limited computing resources (more on that in the Challenges section) and time constrain, we had to settle with $1500$ samples. The training process took about $25$ hours to complete. We hadn't really had chance to try different hyper-parameters, optimizers, and loss functions. We simply configured our model to use GSD and MSE. 
 
 
 
@@ -135,26 +136,50 @@ We trained out model on $1500$ images with $50$ epoch, the training set is hardl
 \end{figure}
 
 
+Here are some predicted images:
+
+\begin{figure}[H]
+ \centering
+ \includegraphics[width=5.0in]{resource/im25.jpg}
+\end{figure}
+
+
+\begin{figure}[H]
+ \centering
+ \includegraphics[width=5.0in]{resource/im43.jpg}
+\end{figure}
+
+
+
+\begin{figure}[H]
+ \centering
+ \includegraphics[width=5.0in]{resource/im89.jpg}
+\end{figure}
+
+
+\begin{figure}[H]
+ \centering
+ \includegraphics[width=5.0in]{resource/im94.jpg}
+\end{figure}
+
+
 \section{Challenges}
-GPU does work!
+One of the major challenges where getting the various pieces of software to work on our MacPro workstation machine. We used OpenCV for image manipulations however OpenCV did not have binding for Python3 and we had to build it from source and it was not an easy task due to various dependent components we also had to build. 
+
+For tensorflow the default version installed via pip was not optimized to use vector instructions (such as SSE, AVX) on Intel processors. After much research on the Internet we were able to build the tensorflow from source. Getting tensorflow to work with GPU (Nvidia CUDA library, don't even try OpenCl!) was another challenge in that the CUDA library is very fussy on the versions of LLVM compiler on OSX. We had to downgrade the LLVM compiler on our Mac to code compile with CUDA library. 
+
+The major shock came as we try to train our model on GPU enabled tensorflow we discovered that our GPU, nVidia GeForce GTX 660, only supported CUDA compute capability 3.0 whatever that is, but the minimum requirement for tensorflow is 3.5. With this bomb shell all the experiments we had planned were not be able to perform. 
 
 
 \section{Remaining Tasks}
-We use VGG16 model as a starting point and forward an image into the VGG16 model, we then extract a few layers from the VGG model and downscale the image to match the extracted layers. The extracted layers should contain useful information of the image. We will construct a model based on the extracted layers to colorize images.  
+So far we were only able to train 1500 samples with 50 epochs. Each epoch took about half hour to complete. Ideally we would like to train at lease 7000 examples but due to the GPU failure this plan will not be realized due to time constrain. With that said we would like to do the following:
 
-
-Our model is basically a learned function that takes the gray level pixels as input and maps them into RGB color pixels. It is not possible to achieve the perfect mapping from gray level images to color images, as the conversion from color images to gray level images is not a one-to-one correspondent function. 
-
-
-We choose the Keras framework with Tensorflow backend for the experiment. We choose Keras due to its user friendlyness and the ability to use GPU as the computing core. The experiment will be carried out on a computer equipped with a 3.7GHz Intel quad core processor, 16G of memory and nVidia GeForce GTX 660 graphics card with 2G memory.  
-
-
-There is a pre-trained VGG16 model for Keras created by François Chollet~\cite{VGG16TRAINED} from github, we plan to use this model and extend it to coloring images. 
-
-
-We split out constructed data set into the training, tune, and test set. We use a MSE of the each pixel of the colorized image and the true color image as a measure of accuracy. 
-
-
+\begin{enumerate}[label=(\roman*)]
+\item Modify our loss function to better optimize colorization. It might be worth while to try a Euclidean distance between the true and predicted color components: $\sqrt{(U-\hat{U})^2+(V-\hat{V})^2}$
+\item Plot the model accuracy and model loss curve
+\item Try some different optimization such as Adam update, batch normalization, etc. 
+\item If time permits create visualization of weights in various layers~\cite{VISW}.
+\end{enumerate}
 
 
 \bibliography{biblio}
