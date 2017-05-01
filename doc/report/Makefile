@@ -13,6 +13,7 @@ view:
 $(THESIS).pdf: $(THESIS).bbl $(THESIS).tex
 	$(TEX) $(THESIS).tex
 	$(TEX) $(THESIS).tex
+	open $(THESIS).pdf
 
 $(THESIS).bbl:
 	$(TEX) $(THESIS).tex

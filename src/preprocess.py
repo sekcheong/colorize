@@ -147,27 +147,35 @@ def prepareDataSet(path, trainPath, tunePath, testPath, ratio = (0.7, 0.2, 0.1),
 
 if __name__ == "__main__":
 
-	processImages('../images/mirflickr', '../images/processed')
-	prepareDataSet('../images/processed','../images/train','../images/tune','../images/test')
+	#processImages('../images/mirflickr', '../images/processed')
+	#prepareDataSet('../images/processed','../images/train','../images/tune','../images/test')
 	
-	# img = imageLoad('../images/processed/im5.jpg')  #cv2.imread('../images/mirflickr/im4183.jpg')
-	# #img = imageResizeCrop(img)
+	img = imageLoad('../images/processed/im10110.jpg')
+	#img = imageResizeCrop(img)
 
 	# print ('Shape:', img.shape[0],  img.dtype, '\nGray Level:', imageIsGrayScale(img))
 
-	# (Y, U, V) = imageRGB2YUV(img)
-	# (Y, U, V) = imageCompressColor(Y, U, V, 0.15)
+	(Y, U, V) = imageRGB2YUV(img)
+	(Y, U, V) = imageCompressColor(Y, U, V, 0.1)
 
-	# #(Y, U, V) = (imageFromComponent(Y), imageFromComponent(U), imageFromComponent(V))
+	#(Y, U, V) = (imageFromComponent(Y), imageFromComponent(U), imageFromComponent(V))
+	
+
+
 	# print(U.shape, ",", V.shape)
-	# img2 = imageYUV2RGB(Y, U, V)
+	img2 = imageYUV2RGB(Y, U, V)
 	# cv2.imshow('image', imageConcat([img, img2]) )
 
-	# #cv2.imshow('image', imageConcat([img, Y, U, V]))
-	# k = cv2.waitKey(0) & 0xFF
+	#img = imageConcat([img, Y, U, V])
 
-	# if k == 27:         # wait for ESC key to exit
-	# 	cv2.destroyAllWindows()
-	# elif k == ord('s'): # wait for 's' key to save and exit
-	#     cv2.imwrite('out.png',img)
-	#     cv2.destroyAllWindows()
+	img = imageConcat([img, img2])
+
+	cv2.imshow('image', img)
+	k = cv2.waitKey(0) & 0xFF
+	if k == 27:         # wait for ESC key to exit
+		cv2.destroyAllWindows()
+	elif k == ord('s'): # wait for 's' key to save and exit
+		cv2.imwrite('out.png',img)
+		cv2.destroyAllWindows()
+
+

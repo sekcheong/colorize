@@ -124,7 +124,9 @@ def makeColorizeModel(imageWidth=224, imageHeight=224, downSamplingRate=config['
     model.add(Flatten(name='flatten'))
     model.add(Dense(4096, activation='relu', name='fc1'))
     model.add(Dense(4096, activation='relu', name='fc2'))
-    model.add(Dense(1000, activation='tanh', name='output'))
+    model.add(Dense(1000, activation='softmax', name='output'))
+    #model.add(Dense(224*224*2, activation='tanh', name='output'))
+    model.summary()
 
     return model
 
@@ -451,7 +453,7 @@ def predictColorizeModel(model, testX, testY):
     model = model_from_json(json)  
     model.summary()
     print("Load trained weights...")
-    model.load_weights('../models/colorize_weights.29-0.03.h5')
+    model.load_weights('../models/colorize_weights.49-0.03.h5')
 
     print("Colorizing images...")
     y = model.predict(testX)
@@ -500,5 +502,8 @@ if __name__ == '__main__':
     model.summary()
 
     #trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
-
     predictColorizeModel(model, testX, testY)
+
+
+
+

@@ -1,0 +1,26 @@
+\begin{thebibliography}{1}
+
+\bibitem{PYDATA}
+{\sc Cheong, S.}
+\newblock Python script for preprocessing the image data.
+\newblock GitHub source code
+  \url{https://github.com/sekcheong/colorize/blob/master/src/preprocess.py}.
+
+\bibitem{VGG16TRAINED}
+{\sc Chollet, F.}
+\newblock Vgg16 model for keras.
+\newblock The trained model can be downloaded from GitHub
+  \url{https://github.com/fchollet/deep-learning-models}.
+
+\bibitem{RYAN2016}
+{\sc Dahl, R.}
+\newblock Automatic colorization.
+\newblock \url{http://tinyclouds.org/colorize/}.
+
+\bibitem{MIR08}
+{\sc M.J.~Huiskes, M.~L.}
+\newblock The mir flickr retrieval evaluation.
+\newblock {\em ACM International Conference on Multimedia Information
+  Retrieval\/} (2008).
+
+\end{thebibliography}
