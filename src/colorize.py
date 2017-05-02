@@ -41,7 +41,7 @@ config = {
 
     'epochsToRun'                 : 10,
     'learnRate'                   : 0.05,
-    'batchSize'                   : 1,
+    'batchSize'                   : 10,
     'dropoutRate'                 : 0.5,
     
     'samplePrecent'               : 1500/7000,
@@ -310,8 +310,8 @@ def imageShow(img):
 
 def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
     #load the vgg16 pre trained weights
-    print("Loading pre-trained weights...")
-    model.load_weights("../models/vgg/vgg16_weights.h5")
+    #print("Loading pre-trained weights...")
+    #model.load_weights("../models/vgg/vgg16_weights.h5")
     model.pop()
     model.pop()
     model.pop()
@@ -501,9 +501,8 @@ if __name__ == '__main__':
     model = makeColorizeModel()
     model.summary()
 
-    #trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
-    predictColorizeModel(model, testX, testY)
-
+    trainColorizeModel(model, trainX, trainY, tuneX, tuneY)
+    #predictColorizeModel(model, testX, testY)
 
 
 
