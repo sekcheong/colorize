@@ -48,9 +48,9 @@ We picked the first $10000$ images (black and white images were excluded) from M
 \end{figure}
 
 
-The images were come in various sizes but for out model we use images of $224\times224$ pixels. The rational for choosing such image size was because the images trained on VGG16 were $224\times224$ pixels and we would use VGG16 weights for training our model. To make the MIRFLICKR images compatible with our model we need to resize the images into $224\times224$ pixels. However, instead of simply resizing the images into $224\times224$ pixels, we scale the shorter side of the image to $224$ pixels and crop along the with $224$ pixels. We think training on images with the correct aspect ration might give a better result for coloring. The scaling and cropping was done by the python script~\cite{PYDATA}.
+The images were come in various sizes but for out model we use accepts images of $224\times224$ pixels. The rational for choosing such image size was because the images trained on VGG16 were $224\times224$ pixels and we would use VGG16 weights for training our own model. To make the MIRFLICKR images compatible with our model we need to resize the images into $224\times224$ pixels. However, instead of simply resizing the images into $224\times224$ pixels, we scale the shorter side of the image to $224$ pixels and crop the image along with the $224$ pixel side to  $224\times224$ pixels. We think training on images with the correct aspect ration might give a better result for coloring. The scaling and cropping was done by a python script~\cite{PYDATA} we created.
 
-To construct a training example from a color image we could convert the image into gray scale image and use the gray scale image as input $\boldsymbol{X}$, and the RGB values as the target $\boldsymbol{Y}$. Note, the input is a $1\times224$ vector and the target is a $3\times224$ vector. As explained by Ryan Dahl\textquotesingle s web blog post~\cite{RYAN2016} that we could convert the image from RGB color space into YUV color space, where Y is the intensity of the image, and UV are two chrominance components of the image. This reduce the target vector $\boldsymbol{Y}$ to $2\times224\times224$. The following figure shows the original image, the Y component, the U component, and the V component. 
+To construct a training example from a color image we could convert the image into gray scale image and use the gray scale image as input $\boldsymbol{X}$, and the RGB values as the target $\boldsymbol{Y}$. Note, the input is a $1\times224\times224$ vector and the target is a $3\times224\times224$ vector. As explained by Ryan Dahl\textquotesingle s web blog post~\cite{RYAN2016} that we could convert the image from RGB color space into YUV color space, where Y is the intensity of the image, and UV are two chrominance components of the image. This reduces the target vector $\boldsymbol{Y}$ to $2\times224\times224$. The following figure shows the original image, the Y component, the U component, and the V component. 
 
 \begin{figure}[!ht]
  \centering
@@ -61,7 +61,7 @@ To construct a training example from a color image we could convert the image in
 
 
 \subsection{Model}
-We use the VGG16 model as our starting model described as shown in \ref{vggvis} Figure 3. The VGG16 has an output layer of $1000$ units with Softmax activation. The output layer is designed in such a way that it can be used to classify image from a thousand categories. Our initial design of transfer learning was that after loading the weights for the model we remove the final layer and replace with a $2\times224\times224$ regression unit. For activation function we use the hyperbolic tangent function. This proved to be a disaster as the number of parameters in the model skyrocketed to $545,402,688$! from  $138,357,544$. 
+We use the VGG16 model as our starting model as shown in Figure 3. The VGG16 has an output layer of $1000$ units with Softmax activation. The output layer is designed in such a way that it can be used to classify image from a thousand categories. Our initial design of transfer learning was that after loading the weights for the model we remove the final layer and replace with a $2\times224\times224$ regression unit. For activation function we use the hyperbolic tangent function. This proved to be a disaster as the number of parameters in the model skyrocketed to $545,402,688$! from  $138,357,544$. 
 
 
 \begin{figure}[H]
@@ -72,7 +72,7 @@ We use the VGG16 model as our starting model described as shown in \ref{vggvis} 
  \caption{The VGG16 model visualization}
 \end{figure}
 
-It turns out that YUV color space is closely related YCbCr color space which was used for digital encoding of color information suited for video and still-image compression and transmission such as MPEG and JPEG~\cite{YUVWIKI}. For our use we could simply true UV as same as CbCr. The main difference between these two color space was scaling. Since we scale pixel values between $-1$ and $1$, it wouldn't make any difference for us. The nice property of YCbCr color space was that human eyes are far more sensitive to change in intensity than color. This allowed us to throw away most of the CbCr information while still maintain the image quality. The process of throwing away color information is called color space compression. 
+It turns out that YUV color space is closely related YCbCr color space which was used for digital encoding of color information suited for video and still-image compression and transmission such as MPEG and JPEG~\cite{YUVWIKI}. For our use we could simply treat UV as same as CbCr. The main difference between these two color spaces was scaling. Since we scale pixel values between $-1$ and $1$, it wouldn't make any difference for us. The nice property of YCbCr color space was that human eyes are far more sensitive to change in intensity than color. This allowed us to throw away most of the CbCr information while still maintain the image quality. The process of throwing away color information is called color space compression. 
 
 We experimented around different compression rate and it appeared that we can throw away $80\%$ of the color information and the image still maintains very good color quality. 
 
@@ -97,25 +97,25 @@ As show in the figure above, the image on the left is the original image, the im
 		block 1 conv 1 (Conv 2D)      &  (None, 224, 224, 64)   &    1792        \\ \hline 
 		block 1 conv 2 (Conv 2D)      &  (None, 224, 224, 64)   &    36928       \\ \hline 
 		block 1 pool (Max Pooling 2D) &  (None, 112, 112, 64)   &    0           \\ \hline 
-		block 2 conv 1 (Conv 2D)      &  (None, 112, 112, 128)  &    73856    \\ \hline 
-		block 2 conv 2 (Conv 2D)      &  (None, 112, 112, 128)  &    147584   \\ \hline 
-		block 2 pool (Max Pooling 2D) &  (None, 56, 56, 128)    &    0        \\ \hline 
-		block 3 conv 1 (Conv 2D)      &  (None, 56, 56, 256)    &    295168   \\ \hline 
-		block 3 conv 2 (Conv 2D)      &  (None, 56, 56, 256)    &    590080   \\ \hline 
-		block 3 conv 3 (Conv 2D)      &  (None, 56, 56, 256)    &    590080   \\ \hline 
-		block 3 pool (Max Pooling 2D) &  (None, 28, 28, 256)    &    0        \\ \hline 
-		block 4 conv 1 (Conv 2D)      &  (None, 28, 28, 512)    &    1180160  \\ \hline 
-		block 4 conv 2 (Conv 2D)      &  (None, 28, 28, 512)    &    2359808  \\ \hline 
-		block 4 conv 3 (Conv 2D)      &  (None, 28, 28, 512)    &    2359808  \\ \hline 
-		block 4 pool (Max Pooling 2D) &  (None, 14, 14, 512)    &    0        \\ \hline 
-		block 5 conv 1 (Conv 2D)      &  (None, 14, 14, 512)    &    2359808  \\ \hline 	
-		block 5 conv 2 (Conv 2D)      &  (None, 14, 14, 512)    &    2359808  \\ \hline 
-		block 5 conv 3 (Conv 2D)      &  (None, 14, 14, 512)    &    2359808  \\ \hline 
-		block 5 pool (Max Pooling 2D) &  (None, 7, 7, 512)      &    0        \\ \hline 
-		flatten (Flatten)             &  (None, 25088)          &    0        \\ \hline 
-		fc 1 (Dense)                  &  (None, 4096)           &    102764544 \\ \hline 
-		fc 2 (Dense)                  &  (None, 4096)           &    16781312  \\ \hline 
-		colorize (Dense)              & (None, 2178)            &  8923266   
+		block 2 conv 1 (Conv 2D)      &  (None, 112, 112, 128)  &    73856       \\ \hline 
+		block 2 conv 2 (Conv 2D)      &  (None, 112, 112, 128)  &    147584      \\ \hline 
+		block 2 pool (Max Pooling 2D) &  (None, 56, 56, 128)    &    0           \\ \hline 
+		block 3 conv 1 (Conv 2D)      &  (None, 56, 56, 256)    &    295168      \\ \hline 
+		block 3 conv 2 (Conv 2D)      &  (None, 56, 56, 256)    &    590080      \\ \hline 
+		block 3 conv 3 (Conv 2D)      &  (None, 56, 56, 256)    &    590080      \\ \hline 
+		block 3 pool (Max Pooling 2D) &  (None, 28, 28, 256)    &    0           \\ \hline 
+		block 4 conv 1 (Conv 2D)      &  (None, 28, 28, 512)    &    1180160     \\ \hline 
+		block 4 conv 2 (Conv 2D)      &  (None, 28, 28, 512)    &    2359808     \\ \hline 
+		block 4 conv 3 (Conv 2D)      &  (None, 28, 28, 512)    &    2359808     \\ \hline 
+		block 4 pool (Max Pooling 2D) &  (None, 14, 14, 512)    &    0           \\ \hline 
+		block 5 conv 1 (Conv 2D)      &  (None, 14, 14, 512)    &    2359808     \\ \hline 	
+		block 5 conv 2 (Conv 2D)      &  (None, 14, 14, 512)    &    2359808     \\ \hline 
+		block 5 conv 3 (Conv 2D)      &  (None, 14, 14, 512)    &    2359808     \\ \hline 
+		block 5 pool (Max Pooling 2D) &  (None, 7, 7, 512)      &    0           \\ \hline 
+		flatten (Flatten)             &  (None, 25088)          &    0           \\ \hline 
+		fc 1 (Dense)                  &  (None, 4096)           &    102764544   \\ \hline 
+		fc 2 (Dense)                  &  (None, 4096)           &    16781312    \\ \hline 
+		colorize (Dense)              & (None, 2178)            &    8923266     \\ \hline 
 	\end{tabular}
 \end{table}
 
@@ -124,7 +124,7 @@ We discarded $85\%$ of the color information, that is we resize the chrominance 
 
 
 \subsection{Training}
-We trained out model on $1500$ images with $50$ epoch, the training set is hardly large enough to train a complex task such as colorization, but due to the limited computing resources (more on that in the Challenges section) and time constrain, we had to settle with $1500$ samples. The training process took about $25$ hours to complete. We hadn't really had chance to try different hyper-parameters, optimizers, and loss functions. We simply configured our model to use GSD and MSE. 
+We trained out model on $1500$ images with $50$ epoch, the training set is hardly large enough to train a complex task such as colorization, but due to the limited computing resources (more on that in the Challenges section) and time constrain, we had to settle with $1500$ samples. The training process took about $25$ hours to complete. We hadn't really had a chance to try different hyper-parameters, optimizers, and loss functions. We simply configured our model to use GSD and MSE. 
 
 
 
@@ -164,15 +164,15 @@ Here are some predicted images:
 
 
 \section{Challenges}
-One of the major challenges where getting the various pieces of software to work on our MacPro workstation machine. We used OpenCV for image manipulations however OpenCV did not have binding for Python3 and we had to build it from source and it was not an easy task due to various dependent components we also had to build. 
+One of the major challenges were getting the various pieces of software to work on our MacPro workstation machine. We used OpenCV for image manipulations however OpenCV did not have bindings for Python3 and we had to build it from source and it was not an easy task due to various dependent components we also had to build. 
 
-For tensorflow the default version installed via pip was not optimized to use vector instructions (such as SSE, AVX) on Intel processors. After much research on the Internet we were able to build the tensorflow from source. Getting tensorflow to work with GPU (Nvidia CUDA library, don't even try OpenCl!) was another challenge in that the CUDA library is very fussy on the versions of LLVM compiler on OSX. We had to downgrade the LLVM compiler on our Mac to code compile with CUDA library. 
+For tensorflow the default version installed via pip was not optimized to use vector instructions (such as SSE, AVX) on Intel processors. After much research on the Internet we were able to build the tensorflow from source. Getting tensorflow to work with GPU (Nvidia CUDA library, don't even try OpenCl!) was another challenge in that the CUDA library is very fussy on the versions of LLVM compiler on OSX. We had to downgrade the LLVM compiler on our Mac to a lower version in order to compile with the CUDA library. 
 
-The major shock came as we try to train our model on GPU enabled tensorflow we discovered that our GPU, nVidia GeForce GTX 660, only supported CUDA compute capability 3.0 whatever that is, but the minimum requirement for tensorflow is 3.5. With this bomb shell all the experiments we had planned were not be able to perform. 
+The major shock came as we try to train our model on GPU enabled tensorflow we discovered that our GPU, nVidia GeForce GTX 660, only supports CUDA compute capability 3.0 whatever that is, but the minimum requirement for tensorflow is 3.5. We were not be able to run every planned experiments. 
 
 
 \section{Remaining Tasks}
-So far we were only able to train 1500 samples with 50 epochs. Each epoch took about half hour to complete. Ideally we would like to train at lease 7000 examples but due to the GPU failure this plan will not be realized due to time constrain. With that said we would like to do the following:
+So far we were only able to train 1500 samples with 50 epochs. Each epoch took about half hour to complete. Ideally we would like to train at lease 7000 examples, but due to the GPU failure and the given time constrain, we were not able to perform such tarining. With that said we would like to do the following:
 
 \begin{enumerate}[label=(\roman*)]
 \item Modify our loss function to better optimize colorization. It might be worth while to try a Euclidean distance between the true and predicted color components: $\sqrt{(U-\hat{U})^2+(V-\hat{V})^2}$
