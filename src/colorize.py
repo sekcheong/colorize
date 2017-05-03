@@ -39,9 +39,9 @@ config = {
     'imageHeight'                 : 224,
     'colorDownSamplingRate'       : 0.15,
 
-    'epochsToRun'                 : 10,
+    'epochsToRun'                 : 50,
     'learnRate'                   : 0.05,
-    'batchSize'                   : 10,
+    'batchSize'                   : 20,
     'dropoutRate'                 : 0.5,
     
     'samplePrecent'               : 1500/7000,
@@ -63,18 +63,25 @@ def maeLoss(y_true, y_pred):
     return K.mean(K.abs(y_pred - y_true), axis=-1)
 
 
-def euclideanLoss(y_true, y_pred):
-    d = tf.constant(3.0, tf.float32)
+# def euclideanLoss(y_true, y_pred):
+#     #d = tf.constant(3.0, tf.float32)
 
-    # U1 = tf.constant(3.0, tf.float32)
-    # V1 = tf.constant(3.0, tf.float32)
+#     # U1 = tf.constant(3.0, tf.float32)
+#     # V1 = tf.constant(3.0, tf.float32)
     
-    # U2 = tf.constant(3.0, tf.float32)
-    # V2 = tf.constant(3.0, tf.float32)
+#     # U2 = tf.constant(3.0, tf.float32)
+#     # V2 = tf.constant(3.0, tf.float32)
 
-     # Euclidean distance between x1,x2
-    l2 = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(y_true, y_pred)), reduction_indices=1))    
-    return l2
+#      # Euclidean distance between x1,x2
+#     l2 = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(y_true, y_pred)), reduction_indices=1))    
+#     return l2
+
+
+def euclideanLoss(y_true, y_pred):
+    u0, v0 = tf.split(y_true, 2)
+    u1, v1 = tf.split(y_pred, 2)
+    e = tf.sqrt(tf.norm(u0-v0)+tf.norm(u1-v1))
+    return e
 
 
 def computeColorChannelSize(imageWidth=224, imageHeight=224, downSamplingRate=config['colorDownSamplingRate']):
@@ -377,10 +384,11 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
         momentum = 0.9,
         nesterov = True
     )    
+
     
     model.compile(
         optimizer = opt,
-        loss      = mseLoss,
+        loss      = euclideanLoss,
         metrics   = ['accuracy']
     )    
 
