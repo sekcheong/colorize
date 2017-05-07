@@ -32,56 +32,23 @@ from keras import callbacks
 from keras import backend as K
 
 
-
 config = {
 
     'imageWidth'                  : 224,
     'imageHeight'                 : 224,
     'colorDownSamplingRate'       : 0.15,
 
-    'epochsToRun'                 : 50,
+    'epochsToRun'                 : 1,
     'learnRate'                   : 0.05,
-    'batchSize'                   : 20,
+    'decay'                       : 4e-5,
+    'momentum'                    : 0.9,
+    'batchSize'                   : 50,
     'dropoutRate'                 : 0.5,
     
     'samplePrecent'               : 1500/7000,
     'checkpointPeriod'            : 5,
     'randomSeed'                  : 838*838,
 }
-
-
-## The mean square error loss function 
-#  @param y_ture: The ground truth of the value
-#  @param y_pred: The predicted value
-#  @return: Returns a sentence with your variables in it
-def mseLoss(y_true, y_pred):    
-    # return K.square(y_pred - y_true)
-    return K.mean(K.square(y_pred - y_true), axis=-1)
-
-
-def maeLoss(y_true, y_pred):
-    return K.mean(K.abs(y_pred - y_true), axis=-1)
-
-
-# def euclideanLoss(y_true, y_pred):
-#     #d = tf.constant(3.0, tf.float32)
-
-#     # U1 = tf.constant(3.0, tf.float32)
-#     # V1 = tf.constant(3.0, tf.float32)
-    
-#     # U2 = tf.constant(3.0, tf.float32)
-#     # V2 = tf.constant(3.0, tf.float32)
-
-#      # Euclidean distance between x1,x2
-#     l2 = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(y_true, y_pred)), reduction_indices=1))    
-#     return l2
-
-
-def euclideanLoss(y_true, y_pred):
-    u0, v0 = tf.split(y_true, 2)
-    u1, v1 = tf.split(y_pred, 2)
-    e = tf.sqrt(tf.norm(u0-v0)+tf.norm(u1-v1))
-    return e
 
 
 def computeColorChannelSize(imageWidth=224, imageHeight=224, downSamplingRate=config['colorDownSamplingRate']):
@@ -252,6 +219,9 @@ def makeExamples(images):
     return (exampleX, exampleY)
 
 
+## Normalize the pixel value between [-1, 1]
+#  @param img: The image in numpy array
+#  @return: Returns normalized image
 def normalizeImage(img):
     img = (img/255.0)*2-1
     return img.astype(dtype='float32', copy=False)
@@ -262,6 +232,11 @@ def denormalizeImage(img):
     return img.astype(dtype='uint8', copy=False)
 
 
+## Reconstruct a image Y from intensity vector and chromiance 
+## vector UY concated togeter
+#  @param x: The intensity vector of the image
+#  @param y: A [2, W, H] vector contains the chrominance of the image
+#  @return: A fully reconstructed image 
 def reconstructImage(x, y):
     y = denormalizeImage(y)
     y = np.hsplit(y, 2)
@@ -315,10 +290,78 @@ def imageShow(img):
         cv2.destroyAllWindows()
 
 
+## The mean square error loss function 
+#  @param y_ture: The ground truth of the value
+#  @param y_pred: The predicted value
+#  @return: Returns a sentence with your variables in it
+def mseLoss(y_true, y_pred):    
+    return K.mean(K.square(y_pred - y_true), axis=-1)
+
+
+def maeLoss(y_true, y_pred):
+    return K.mean(K.abs(y_pred - y_true), axis=-1)
+
+
+def euclideanLoss(y_true, y_pred):
+    u0, v0 = tf.split(y_true, 2)
+    u1, v1 = tf.split(y_pred, 2)
+    e = tf.sqrt(tf.norm(u0-v0)+tf.norm(u1-v1))
+    return e
+
+
+def kullback_leibler_divergence(y_true, y_pred):
+    hist_true = tf.histogram_fixed_width(y_true, [-1.0, 1.0], nbins=256, dtype=K.floatx())
+    hist_pred = tf.histogram_fixed_width(y_pred, [-1.0, 1.0], nbins=256, dtype=K.floatx())
+
+    hist_true = hist_true / (33*33.0*2)
+    hist_pred = hist_pred / (33*33.0*2)
+
+    hist_true = K.clip(hist_true, K.epsilon(), 1)
+    hist_pred = K.clip(hist_pred, K.epsilon(), 1)
+
+
+    #b = hist_pred.eval()
+
+    # W1 = tf.ones((2,2))
+    # W2 = tf.Variable(tf.zeros((2,2)), name="weights")
+    # with K.get_session()  as sess:
+    #     print(sess.run(hist_pred))
+    #     sess.run(tf.initialize_all_variables())
+    #     print(sess.run(W2))
+
+    #with K.get_session()():
+    # with K.get_session() as sess:
+    #     b = hist_true.eval()
+    #     open('test.txt', 'w').write(str(b))
+
+    #b = hist_true.eval(session=K.get_session())  # Runs to get the output of 'a' and converts it to a numpy array
+   
+    # y_t = K.clip(hist_true, K.epsilon(), 1)
+    # y_p = K.clip(hist_pred, K.epsilon(), 1)
+    # #print(hist_true.shape)
+    # sess = K.get_session()
+    # z = sess.run(y_t)
+    # open('test.txt', 'w').write(str(y_t))
+    #y_true = K.clip(y_true, K.epsilon(), 1)
+    #y_pred = K.clip(y_pred, K.epsilon(), 1)
+    #return K.sum(y_true * K.log(y_true / y_pred), axis=-1)
+    return K.mean(K.square(hist_pred - hist_true), axis=-1)
+    
+
+def histoLoss(y_true, y_pred):
+    hist_true = tf.histogram_fixed_width(y_true, [-1.0, 1.0], nbins=256, dtype=K.floatx())
+    hist_pred = tf.histogram_fixed_width(y_pred, [-1.0, 1.0], nbins=256, dtype=K.floatx())
+
+    hist_true = hist_true / (33*33.0*2)
+    hist_pred = hist_pred / (33*33.0*2)
+        
+    hist_true = K.clip(hist_true, K.epsilon(), 1)
+    hist_pred = K.clip(hist_pred, K.epsilon(), 1)
+    rmse = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(hist_pred, hist_true))), name="rmse")
+    return rmse
+
+
 def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
-    #load the vgg16 pre trained weights
-    #print("Loading pre-trained weights...")
-    #model.load_weights("../models/vgg/vgg16_weights.h5")
     model.pop()
     model.pop()
     model.pop()
@@ -377,18 +420,17 @@ def trainColorizeModel(model, trainX, trainY, tuneX, tuneY):
 
     #opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-6)    
     #opt = keras.optimizers.SGD(lr=0.01, momentum=0.9, decay=0.0008, nesterov=False)
-
     opt = keras.optimizers.SGD(
         lr       = config['learnRate'],
-        decay    = 0.00008, 
-        momentum = 0.9,
+        decay    = config['decay'],
+        momentum = config['momentum'],
         nesterov = True
     )    
 
     
     model.compile(
         optimizer = opt,
-        loss      = euclideanLoss,
+        loss      = histoLoss, #kullback_leibler_divergence,
         metrics   = ['accuracy']
     )    
 

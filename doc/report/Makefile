@@ -1,7 +1,7 @@
 TEX = pdflatex -shell-escape -interaction=nonstopmode -file-line-error
 BIBTEX = bibtex
 JGRAPH = jgraph
-THESIS = progress
+THESIS = final
 
 .PHONY: all view
 
