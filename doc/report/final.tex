@@ -29,23 +29,33 @@
 \maketitle
 
 \begin{abstract}
-This project is an attempt to build a deep convolutional neural network (CNN) to colorize black and white images. The net will take a black and white image and output a colorized image. In this project, we use a pre-trained model, VGG16~\cite{vgg16}, to extract features that will be used for training our network for colorizing. We hope to gain some insight on how deep learn features from natural image and the technique of transfer learning.
+This project is an attempt to build a deep convolutional neural network (CNN) to colorize gray scale images whiteout user intervention. We frame the colorization model as a regression with the intensity component of an image as input and predict the color components of that image.  We use a pre-trained model, VGG16~\cite{VGG16}, to extract features that will be used for training our colorizing model.
 \end{abstract}
 
 \section{Introduction}
-We proposed a project to use deep CNN to colorize black and white images automatically. We would explore the technique transfer learning to transfer the learned weights from VGG16 to build a new model for colorizing image. We would also compare the result using transfer learning verses training the model from scratch. The report describes the progress we have made so for in our proposed project. We also address the issues we have encountered and the remaining work towards the completion of the project. 
+Colorization of gray scale images is a relative simple task for human to perform, yet it a quite challenging problem to solve by machine learning algorithms. To colorize an image, a human only needs to recall that the sky is blue, trees are green. For many objects, a human can apply some imagination to colorize an gray scale images relative well. However, it is a difficult task for computer to solve, in that it is obvious to a human that an apple cannot be blue. But for a machine learning algorithm, if it has not seen enough apple examples before, it could color an apple blue or green or a number of different color as long as the cost function defined for the learning algorithm returns similar values for a number of different colors. It is beyond the scope of this project to design a model that can perform at a similar level of human in colorization. We aim to explorer process of colorization using CNN and use the transfer learning technique to help improve our colorization CNN. 
 
+We frame the colorization problem as an regression problem. We build an CNN that accepts an gray scale image and predicts the color components of the image. We then combine the gray scale and color components to form an predicted color image as show in Figure 1. We start with a VGG16 pre-trained model, which is designed for image classification purposes, and we modify the model for image colorization.   
+
+\begin{figure}[!ht]
+ \centering
+  \includegraphics[width=4.0in]{resource/example.jpg}
+ \label{sampleimages}
+ \caption{The picture on the left is the ground truth, the picture in the middle is the input, and the picture on the right is the pridected color image.}
+\end{figure}
+
+
+\section{Related Work}
+Our project was primarily motivated by Ryan Dahl's Automatic Colorization~\cite{RYAN2016} blog post. Ryan proposed a model which utilize a concept of hypercolumns~\cite{HYPERCOL}. A hypercolumn for a pixel in the input image is a vector of all the activations above that pixel. The Ryan implemented this was by forwarding an image through the VGG network and then extracting a few layers, upscaling them to the original image size, and concatinating them all together. As shown by Zeiler and Fergus~\cite{Zeiler} a lot of useful information were represented in the intermediate layers of a CNN, therefore intermediate layers of a classification network can provide useful information for colorization.
+
+Zhang et al., Larsson et al.~\cite{ZHANG}  and Iizuka et al.~\cite{Iizuka} have developed similar but much more sophisticated colorization systems. The systems differ primary in their CNN architectures and loss functions. While Zhang et al., use a classification loss, with rebalanced rare classes, Larsson et al. use an un-rebalanced classification loss, and Iizuka et al. use a regression loss.
 
 \section{Probablem Definition}
 We started out by finding the suitable data set for our colorizing model. We then did some research on digital image processing with specific area in color theory and image compression. We defined the model based on the image compress technique we learned to best suited for the task for colorizing.
 
 
-\section{Approach}
-We started out by finding the suitable data set for our colorizing model. We then did some research on digital image processing with specific area in color theory and image compression. We defined the model based on the image compress technique we learned to best suited for the task for colorizing.
-
-
 \subsection{Data Set}
-There are a number of data sets for computer vision available publicly. Among the available image data sets the ImageNet data set is the most famous one. Many machine learning models involving vision are trained on ImageNet images. There are approximately one million image files from $1000$ categories in the ImageNet data set and about $120$G in size. We downloaded (took really long time!) the entire image set and looked some images. It turned that there are many images either in black and white or were not useful coloring examples. We believe a good coloring example image should contain a single object, the foreground and background should be distinguishable and should have good saturation and hue. It would be impossible to hand pick the good examples given the time constrain and the shear number of images in the data set. For this reason we switched to MIRFLICKR~\cite{MIR08} which is a collection of images from the flicker picture sharing website. The MIRFLICKR pictures are very appearing visually because a lot of them were produced by photographer users from flicker. 
+There are a number of data sets for computer vision available publicly. Among the available image data sets the ImageNet data set is the most famous one. Many machine learning models involving vision are trained on ImageNet images. There are approximately one million image files from $1000$ categories in the ImageNet data set and it is about $120$G in size. We downloaded (took really long time!) the entire image set and looked some images. It turned that there are many images either in black and white or were not useful coloring examples. We believe a good coloring example image should contain a single object, the foreground and background should be distinguishable and should have good saturation and hue. It would be impossible to hand pick the good examples given the time constrain and the shear number of images in the data set. For this reason we switched to MIRFLICKR~\cite{MIR08} which is a collection of images from the flicker picture sharing website. The MIRFLICKR pictures are very appearing visually because, unliky ImageNet, these pictures are produced by flicker users with the intention for human consumption.  
 
 We picked the first $10000$ images (black and white images were excluded) from MIRFLICKR as our image set. The images was then split into $70\%$ for training, $20\%$ for tuning, and the remaining $10\%$ for testing. 
 
